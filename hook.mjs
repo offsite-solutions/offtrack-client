@@ -3,11 +3,11 @@
 // Mindig 0-val lép ki, és soha nem blokkol, ha a szerver nem érhető el.
 import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { send, enqueue, flushQueue } from './lib/api.mjs';
-import { pidFile, contextFile } from './lib/config.mjs';
+import { pidFile, contextFile, L } from './lib/config.mjs';
 import { claudePid } from './lib/proc.mjs';
 import { endsWithList } from './lib/transcript.mjs';
 
-const OFFLINE = '[offtrack] A szerver nem érhető el, ez az utolsó ismert állapot; a jelentések helyben sorba kerülnek.';
+const OFFLINE = () => L('[offtrack] A szerver nem érhető el, ez az utolsó ismert állapot; a jelentések helyben sorba kerülnek.', '[offtrack] The server is unreachable; this is the last known state. Reports are queued locally.');
 const EVENTS = new Set(['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Stop', 'SessionEnd']);
 
 function readText(file) {
@@ -47,7 +47,7 @@ async function main() {
       writeFileSync(contextFile(input.cwd), context, { mode: 0o600 });
     } else {
       const cached = readText(contextFile(input.cwd));
-      context = cached ? `${OFFLINE}\n${cached}` : OFFLINE;
+      context = cached ? `${OFFLINE()}\n${cached}` : OFFLINE();
     }
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: context } }));
   } else if (event === 'Stop' && res.ok && res.data?.block === true) {

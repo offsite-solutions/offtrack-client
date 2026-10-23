@@ -25,3 +25,10 @@ test('```json``` blokk kivágása', async () => {
 test('érthetetlen válasz', async () => {
   await assert.rejects(summarize('greengo', ['x'], { run: async () => wrapCli('nem tudom') }), /greengo összefoglalója nem értelmezhető/);
 });
+
+test('angol prompt angol szöveget kér', () => {
+  const p = buildPrompt('greengo', ['x'], 'en');
+  assert.ok(p.includes('only JSON'));
+  assert.ok(p.includes('in English'));
+  assert.ok(!p.includes('csak JSON'));
+});

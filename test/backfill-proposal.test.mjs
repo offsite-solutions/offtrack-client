@@ -55,3 +55,21 @@ test('a kihagyott régebbi sessionök a fejlécben', () => {
 test('fejléc nélkül hiba', () => {
   assert.throws(() => parseProposal('## Szál: (alap)\n- ág 2026-09-01: x\n'), /fejléc/);
 });
+
+test('angol javaslatfájl: írás és beolvasás', () => {
+  const text = writeProposal({ ...base, lang: 'en' });
+  assert.ok(text.includes('# offtrack proposal: greengo'));
+  assert.ok(text.includes('## Thread: backend release'));
+  assert.ok(text.includes('## Thread: (default)'));
+  assert.ok(text.includes('- stop 2026-09-12: Backend 2.4 kiadva'));
+  assert.ok(text.includes('- idea 2026-09-21:'));
+  const p = parseProposal(text);
+  assert.deepEqual(p.warnings, []);
+  assert.equal(p.threads[1].title, null);
+  assert.equal(p.threads[0].items[1].kind, 'branch');
+});
+
+test('a beolvasó a vegyes kulcsszavakat is elfogadja', () => {
+  const p = parseProposal('<!-- offtrack-backfill project="x" cwd="" sessions="1" from="2026-09-01" -->\n## Thread: (default)\n- manual 2026-09-02: a\n## Szál: b\n- ötlet 2026-09-03: c\n');
+  assert.deepEqual(p.threads.map((t) => [t.title, t.items[0].kind]), [[null, 'manual'], ['b', 'idea']]);
+});

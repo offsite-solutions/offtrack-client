@@ -69,13 +69,17 @@ function stamp(d = new Date()) {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
+// A telepítő üzeneteinek nyelve a választott nyelv (run állítja be).
+let LANG = 'hu';
+const M = (hu, en) => (LANG === 'en' ? en : hu);
+
 function rewrite(file, fn) {
   const before = existsSync(file) ? readFileSync(file, 'utf8') : null;
   const after = fn(before);
   if (after === before) return;
   if (before !== null) copyFileSync(file, `${file}.bak-offtrack-${stamp()}`);
   writeFileSync(file, after);
-  console.log(`módosítva: ${file}`);
+  console.log(`${M('módosítva', 'modified')}: ${file}`);
 }
 
 function mcpRegistered() {
@@ -92,6 +96,8 @@ function run(cmd, opts) {
   let saved = {};
   try { saved = JSON.parse(readFileSync(confFile, 'utf8')); } catch { /* még nincs */ }
   const lang = chooseLang(opts.lang, saved.lang);
+  LANG = lang;
+  const skillDir = join(HERE, lang === 'en' ? 'skill-en' : 'skill');
   const block = readFileSync(join(HERE, lang === 'en' ? 'claude-md.en.md' : 'claude-md.md'), 'utf8');
 
   if (cmd === 'install') {
@@ -106,16 +112,16 @@ function run(cmd, opts) {
     const link = join(bin, 'offtrack');
     try { lstatSync(link); unlinkSync(link); } catch { /* nincs még */ }
     symlinkSync(join(HERE, 'bin', 'offtrack.mjs'), link);
-    console.log(`parancs: ${link}`);
+    console.log(`${M('parancs', 'command')}: ${link}`);
     // A skill a tároló könyvtárára mutató link, így a tároló frissítése azonnal érvényes.
     const skills = join(homedir(), '.claude', 'skills');
     mkdirSync(skills, { recursive: true });
     const skill = join(skills, 'offtrack');
     try {
       if (lstatSync(skill).isSymbolicLink()) unlinkSync(skill);
-      else console.log(`kihagyva: ${skill} létezik, és nem link`);
+      else console.log(M(`kihagyva: ${skill} létezik, és nem link`, `skipped: ${skill} exists and is not a link`));
     } catch { /* nincs még */ }
-    if (!existsSync(skill)) { symlinkSync(join(HERE, 'skill'), skill); console.log(`skill: ${skill}`); }
+    if (!existsSync(skill)) { symlinkSync(skillDir, skill); console.log(`skill: ${skill}`); }
   } else {
     rewrite(settingsFile, (t) => (t === null ? null : JSON.stringify(unpatchSettings(JSON.parse(t)), null, 2) + '\n'));
     rewrite(claudeMd, (t) => (t === null ? null : unpatchClaudeMd(t)));
@@ -123,7 +129,7 @@ function run(cmd, opts) {
     if (mcpRegistered()) execFileSync('claude', ['mcp', 'remove', '--scope', 'user', 'offtrack'], { stdio: 'inherit' });
     try { unlinkSync(join(homedir(), '.local', 'bin', 'offtrack')); } catch { /* nincs */ }
     const skill = join(homedir(), '.claude', 'skills', 'offtrack');
-    try { if (lstatSync(skill).isSymbolicLink() && readlinkSync(skill) === join(HERE, 'skill')) unlinkSync(skill); } catch { /* nincs */ }
+    try { if (lstatSync(skill).isSymbolicLink() && [join(HERE, 'skill'), join(HERE, 'skill-en')].includes(readlinkSync(skill))) unlinkSync(skill); } catch { /* nincs */ }
   }
 }
 
@@ -136,7 +142,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     else if (rest[i] === '--lang') opts.lang = rest[i + 1];
   }
   if (!['install', 'uninstall'].includes(cmd)) {
-    console.error('Használat: node install.mjs install|uninstall [--lang hu|en] [--settings <fájl>] [--claude-md <fájl>]');
+    console.error('Usage / Használat: node install.mjs install|uninstall [--lang hu|en] [--settings <file>] [--claude-md <file>]');
     process.exit(2);
   }
   try { run(cmd, opts); } catch (e) { console.error(e.message); process.exit(2); }
