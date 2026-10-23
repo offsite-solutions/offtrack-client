@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/offsite-solutions/offtrack-client.git"
   },
-  "homepage": "https://offtrack.offsite-solutions.com/telepites",
+  "homepage": "https://offtrack.offsite-solutions.com/install",
   "engines": {
     "node": ">=22"
   },
