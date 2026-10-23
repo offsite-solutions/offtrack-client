@@ -261,7 +261,7 @@ async function main([cmd, ...args]) {
 
   ${url}
 
-Felvétel: claude.ai → Beállítások → Connectorok → Egyedi connector hozzáadása; név: offTrack, URL: a fenti.
+Felvétel: claude.ai → Beállítások → Connectorok → Egyedi connector hozzáadása; név: offtrack, URL: a fenti.
 Utána a Claude appban (mobil, desktop, web): „track futureal szórólap”.
 Az új URL a korábbit érvényteleníti; visszavonás: offtrack mobile revoke`));
   }

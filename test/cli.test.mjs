@@ -188,7 +188,7 @@ test('import felküldi a fájlt és .imported-re nevezi', async () => {
   const dir = home(srv.url);
   const tmp = mkdtempSync(join(tmpdir(), 'offtrack-prop-'));
   const file = join(tmp, 'greengo.md');
-  writeFileSync(file, '# offTrack-javaslat: greengo\n<!-- offtrack-backfill project="greengo" cwd="/w/greengo" sessions="2" from="2026-09-01" -->\n\n## Szál: (alap)\n- ág 2026-09-02: Nyitott\n- ágg 2026-09-03: elírt\n');
+  writeFileSync(file, '# offtrack-javaslat: greengo\n<!-- offtrack-backfill project="greengo" cwd="/w/greengo" sessions="2" from="2026-09-01" -->\n\n## Szál: (alap)\n- ág 2026-09-02: Nyitott\n- ágg 2026-09-03: elírt\n');
   const r = await cliEnv(dir, ['import', file], {});
   await srv.close();
   assert.equal(r.status, 0, r.stderr);

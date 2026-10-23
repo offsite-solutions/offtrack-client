@@ -13,7 +13,7 @@ const base = { project: 'greengo', cwd: '/Users/dev/Work/greengo', sessions: 14,
 
 test('oda-vissza ugyanazt adja, időrendben', () => {
   const text = writeProposal(base);
-  assert.ok(text.includes('# offTrack-javaslat: greengo'));
+  assert.ok(text.includes('# offtrack-javaslat: greengo'));
   assert.ok(text.includes('offtrack import ~/offtrack-backfill/greengo.md'));
   const p = parseProposal(text);
   assert.equal(p.project, 'greengo');

@@ -1,11 +1,11 @@
 ---
 name: offtrack
-description: Az offTrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offTrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
+description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
 ---
 
-# offTrack
+# offtrack
 
-Az offTrack az Offsite Solutions feladatkövetője: minden Claude Code session jelent neki, a felhasználó pedig egy térképen látja, hol tart minden szál. A jelentés szabályai a `~/.claude/CLAUDE.md` offTrack-blokkjában vannak; ez a skill a ritkább műveleteket írja le.
+Az offtrack az Offsite Solutions feladatkövetője: minden Claude Code session jelent neki, a felhasználó pedig egy térképen látja, hol tart minden szál. A jelentés szabályai a `~/.claude/CLAUDE.md` offtrack-blokkjában vannak; ez a skill a ritkább műveleteket írja le.
 
 ## Fogalmak
 
@@ -51,7 +51,7 @@ Csak a felhasználó kifejezett kérésére:
 
 ## Mobil connector
 
-A Claude appból (mobil, desktop, web) „track …” kéréssel lehet tételt felvenni. Ha a felhasználó a connectort kéri: `offtrack mobile url` (Bash). Az URL titkos, mint egy jelszó: csak a felhasználónak mutasd meg, fájlba, commitba, offTrack-tételbe ne írd. Az új URL a régit érvényteleníti; visszavonás: `offtrack mobile revoke`.
+A Claude appból (mobil, desktop, web) „track …” kéréssel lehet tételt felvenni. Ha a felhasználó a connectort kéri: `offtrack mobile url` (Bash). Az URL titkos, mint egy jelszó: csak a felhasználónak mutasd meg, fájlba, commitba, offtrack-tételbe ne írd. Az új URL a régit érvényteleníti; visszavonás: `offtrack mobile revoke`.
 
 ## Visszatöltés
 
@@ -63,7 +63,7 @@ A régi Claude Code beszélgetésekből projektenként javaslatfájl készül (`
 
 ## Tokenek
 
-Tokent soha ne írj ki, ne másolj fájlba, commitba, jelentésbe vagy offTrack-tételbe. Ha a felhasználó egy tokent illeszt be a beszélgetésbe, ne használd: kérd meg, hogy a saját termináljában futtassa az `offtrack login`-t, és javasold, hogy a beillesztett tokent vonassa vissza (`offtrack admin token revoke <email>`), mert a beszélgetés naplójába került.
+Tokent soha ne írj ki, ne másolj fájlba, commitba, jelentésbe vagy offtrack-tételbe. Ha a felhasználó egy tokent illeszt be a beszélgetésbe, ne használd: kérd meg, hogy a saját termináljában futtassa az `offtrack login`-t, és javasold, hogy a beillesztett tokent vonassa vissza (`offtrack admin token revoke <email>`), mert a beszélgetés naplójába került.
 
 ## Hibák
 

@@ -52,7 +52,7 @@ server.registerTool('offtrack_threads', {
 });
 
 server.registerTool('offtrack_report', {
-  description: 'Jelentés az offTracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt alapszálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri.',
+  description: 'Jelentés az offtracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt alapszálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri.',
   inputSchema: {
     kind: z.enum(['stop', 'branch', 'manual', 'idea']),
     text: z.string().min(1).max(2000),
@@ -101,7 +101,7 @@ server.registerTool('offtrack_link', {
 });
 
 server.registerTool('offtrack_projects', {
-  description: 'A felhasználó offTrack-projektjei (szerep: gazda vagy tag, a saját gyökérkönyvtárai, a tagok). Akkor hívd, ha a felhasználó a projekteket kéri, vagy csatolás előtt.',
+  description: 'A felhasználó offtrack-projektjei (szerep: gazda vagy tag, a saját gyökérkönyvtárai, a tagok). Akkor hívd, ha a felhasználó a projekteket kéri, vagy csatolás előtt.',
 }, async () => {
   const r = await read('/api/v1/projects');
   if (r.error) return r.error;

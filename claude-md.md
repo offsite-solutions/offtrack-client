@@ -1,6 +1,6 @@
-## Feladatkövetés (offTrack)
+## Feladatkövetés (offtrack)
 
-Minden session magától jelent az offTracknek az `offtrack_*` toolokkal. Az indításkor kapott `[offtrack]` blokk mutatja a projekt szálait, nyitott ágait és az új megjegyzéseket; ezeket vedd figyelembe.
+Minden session magától jelent az offtracknek az `offtrack_*` toolokkal. Az indításkor kapott `[offtrack]` blokk mutatja a projekt szálait, nyitott ágait és az új megjegyzéseket; ezeket vedd figyelembe.
 
 Jelents, de csak ezekben a helyzetekben (`offtrack_report`):
 - **Megálló** (`kind: stop`): lezárt, önálló lépés – terv elfogadva, migráció lefutott, deploy kész, commit/PR kész, gyökérok megtalálva.
