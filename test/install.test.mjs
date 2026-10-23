@@ -79,8 +79,9 @@ import { tmpdir as td } from 'node:os';
 import { join as jn } from 'node:path';
 import { execFileSync as ex } from 'node:child_process';
 
-test('nyelv: a kapcsoló, majd a mentett, végül a magyar', () => {
-  assert.equal(chooseLang(undefined, undefined), 'hu');
+test('nyelv: a kapcsoló, majd a mentett, végül az angol', () => {
+  assert.equal(chooseLang(undefined, undefined), 'en');
+  assert.equal(chooseLang(undefined, 'hu'), 'hu');
   assert.equal(chooseLang(undefined, 'en'), 'en');
   assert.equal(chooseLang('hu', 'en'), 'hu');
   assert.throws(() => chooseLang('de', undefined), /hu, en/);

@@ -35,9 +35,13 @@ test('angol súgó és hibaüzenet', async () => {
   assert.match(err.stderr, /^Error: No such project: x/);
 });
 
-test('magyar az alapértelmezés', async () => {
+test('angol az alapértelmezés, a magyar választható', async () => {
   const srv = await recorder(() => [200, {}]);
-  const r = await run(home(srv.url), ['nincs-ilyen-parancs']);
+  const plain = home(srv.url);
+  writeFileSync(join(plain, 'config.json'), JSON.stringify({ url: srv.url }));
+  const r = await run(plain, ['nincs-ilyen-parancs']);
+  assert.match(r.stderr, /^Usage:/);
+  const hu = await run(home(srv.url), ['nincs-ilyen-parancs']);
   await srv.close();
-  assert.match(r.stderr, /^Használat:/);
+  assert.match(hu.stderr, /^Használat:/);
 });

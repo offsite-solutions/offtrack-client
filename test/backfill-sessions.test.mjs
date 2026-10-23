@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { utimesSync } from 'node:fs';
 import { listSessions, condense, groupByProject } from '../lib/backfill/sessions.mjs';
+import { useHungarian } from './helpers.mjs';
+
+useHungarian();
 
 const root = new URL('./fixtures/backfill/', import.meta.url).pathname;
 const now = new Date();

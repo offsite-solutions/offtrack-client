@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // offtrack telepítő: hookok a ~/.claude/settings.json-ba, MCP szerver felhasználói szinten,
 // szabályok a ~/.claude/CLAUDE.md-be, és egy `offtrack` parancs a ~/.local/bin-be.
-// Használat: node install.mjs install|uninstall [--lang hu|en] [--settings <fájl>] [--claude-md <fájl>]
+// Használat: node install.mjs install|uninstall [--lang en|hu] [--settings <fájl>] [--claude-md <fájl>]  (alapból angol)
 // A --settings / --claude-md kapcsolóval csak a megadott fájlokat javítja (próba másolaton).
 import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync, symlinkSync, unlinkSync, lstatSync, readlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -57,11 +57,11 @@ export function unpatchClaudeMd(text) {
   return before + after;
 }
 
-// A CLAUDE.md-blokk nyelve: a --lang kapcsoló, ennek hiányában a korábban mentett, végül a magyar.
+// A nyelv: a --lang kapcsoló, ennek hiányában a korábban mentett, végül az angol.
 const LANGS = ['hu', 'en'];
 export function chooseLang(flag, saved) {
   if (flag !== undefined && !LANGS.includes(flag)) throw new Error(`Ismeretlen nyelv: ${flag} (lehet: ${LANGS.join(', ')})`);
-  return flag ?? (LANGS.includes(saved) ? saved : 'hu');
+  return flag ?? (LANGS.includes(saved) ? saved : 'en');
 }
 
 function stamp(d = new Date()) {
@@ -70,7 +70,7 @@ function stamp(d = new Date()) {
 }
 
 // A telepítő üzeneteinek nyelve a választott nyelv (run állítja be).
-let LANG = 'hu';
+let LANG = 'en';
 const M = (hu, en) => (LANG === 'en' ? en : hu);
 
 function rewrite(file, fn) {

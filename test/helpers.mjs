@@ -26,7 +26,16 @@ export async function recorder(respond = () => [200, {}]) {
 // Ideiglenes OFFTRACK_HOME a megadott szerver-URL-lel és tokennel.
 export function home(url = 'http://127.0.0.1:9') {
   const dir = mkdtempSync(join(tmpdir(), 'offtrack-home-'));
-  writeFileSync(join(dir, 'config.json'), JSON.stringify({ url }));
+  // a meglévő tesztek a magyar kimenetet ellenőrzik; az alapértelmezést (angol) a lang.test.mjs nézi
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ url, lang: 'hu' }));
   writeFileSync(join(dir, 'client-token'), 'tok-'.padEnd(40, 'x'));
   return dir;
+}
+
+// A magyar szövegeket ellenőrző tesztek saját, magyar beállítású OFFTRACK_HOME-ot kapnak,
+// hogy ne a gép ~/.config/offtrack beállításán múljanak (alapból angol).
+export function useHungarian() {
+  const dir = mkdtempSync(join(tmpdir(), 'offtrack-hu-'));
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ lang: 'hu' }));
+  process.env.OFFTRACK_HOME = dir;
 }

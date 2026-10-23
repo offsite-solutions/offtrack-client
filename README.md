@@ -7,7 +7,7 @@ The Mac client of [offtrack](https://offtrack.offsite-solutions.com), the Offsit
 ```sh
 git clone https://github.com/offsite-solutions/offtrack-client.git
 cd offtrack-client && npm install
-node install.mjs install --lang en   # English CLAUDE.md block; omit for Hungarian
+node install.mjs install            # English by default; add --lang hu for Hungarian
 offtrack login        # paste your client token (generate it on the install page)
 offtrack whoami
 ```
@@ -24,6 +24,6 @@ Az [offtrack](https://offtrack.offsite-solutions.com) Mac-kliense. Az offtrack a
 
 **Részletes telepítési útmutató (magyarul és angolul):** https://offtrack.offsite-solutions.com/install
 
-A telepítés a fenti parancsokkal megy, magyar CLAUDE.md-blokkhoz `--lang en` nélkül; a kliens-tokent a telepítési oldalon, belépve generálhatod. A mappa neve maradjon `offtrack-client`: a telepítő erről ismeri fel a saját hookjait. Frissítés: `git pull`; eltávolítás: `node install.mjs uninstall`.
+A telepítés a fenti parancsokkal megy, magyarul `node install.mjs install --lang hu`-val (a CLAUDE.md-blokk, a parancs, a skill és a szerver üzenetei is magyarok lesznek); a kliens-tokent a telepítési oldalon, belépve generálhatod. A mappa neve maradjon `offtrack-client`: a telepítő erről ismeri fel a saját hookjait. Frissítés: `git pull`; eltávolítás: `node install.mjs uninstall`.
 
 Licenc: MIT.

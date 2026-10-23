@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeProposal, parseProposal } from '../lib/backfill/proposal.mjs';
+import { useHungarian } from './helpers.mjs';
+
+useHungarian();
 
 const threads = [
   { title: 'backend release', items: [

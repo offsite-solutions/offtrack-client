@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildPrompt, summarize } from '../lib/backfill/summarize.mjs';
+import { useHungarian } from './helpers.mjs';
+
+useHungarian();
 
 const ok = { threads: [{ title: null, items: [{ kind: 'stop', text: 'kész', date: '2026-10-01' }] }] };
 const wrapCli = (s) => JSON.stringify({ type: 'result', result: s });
