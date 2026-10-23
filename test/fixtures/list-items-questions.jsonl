@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"x"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Mi legyen?\n- egy?\n- kettő?\n- három?"}]}}

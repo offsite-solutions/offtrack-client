@@ -1,0 +1,5 @@
+{"type":"user","cwd":"/w/greengo/backend","sessionId":"s1","timestamp":"2026-10-01T09:00:00Z","message":{"role":"user","content":"Készítsd el a release-t"}}
+{"type":"assistant","cwd":"/w/greengo/backend","sessionId":"s1","timestamp":"2026-10-01T09:05:00Z","message":{"content":[{"type":"thinking","thinking":"titkos gondolat"},{"type":"text","text":"Elkészült a 2.4 release."},{"type":"tool_use","name":"Bash","input":{"command":"ls"}}]}}
+{"type":"user","cwd":"/w/greengo/backend","sessionId":"s1","timestamp":"2026-10-01T09:06:00Z","message":{"content":[{"type":"tool_result","content":"TOOL-KIMENET"}]}}
+{"type":"user","cwd":"/w/greengo/backend","sessionId":"s1","timestamp":"2026-10-01T09:10:00Z","message":{"role":"user","content":"És a partnerportál?"}}
+{"type":"assistant","cwd":"/w/greengo/backend","sessionId":"s1","timestamp":"2026-10-01T09:12:00Z","message":{"content":[{"type":"text","text":"Az még hátravan."}]}}

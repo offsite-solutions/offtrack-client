@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"csináld meg"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Lépések:\n- egy\n- kettő\n\nEzzel kész vagyok, más teendő nincs."}]}}

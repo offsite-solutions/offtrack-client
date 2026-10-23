@@ -1,0 +1,3 @@
+{"type":"user","cwd":"/w/greengo","sessionId":"s2","timestamp":"2026-10-02T09:00:00Z","message":{"role":"user","content":"egy kérdés"}}
+{"type":"assistant","cwd":"/w/greengo","sessionId":"s2","timestamp":"2026-10-02T09:01:00Z","message":{"content":[{"type":"text","text":"válasz"}]}}
+{"type":"user","mess

@@ -1,0 +1,3 @@
+{"type":"user","message":{"role":"user","content":"csináld meg"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Lépések:\n- egy\n- kettő"}]}}
+{"type":"user","message":{"role":"user","content":"és most?"}}

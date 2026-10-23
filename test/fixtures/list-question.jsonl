@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"x"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Két lehetőség van. Melyiket választod?\n\n- küszöb emelése\n- felismerés kikapcsolása\n- mindkettő"}]}}

@@ -1,0 +1,6 @@
+{"type":"user","message":{"role":"user","content":"régi kérdés"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Régi válasz:\n- x\n- y"}]}}
+{"type":"user","message":{"role":"user","content":"csináld meg"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Megnézem."}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","content":"ok"}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Kész. Következő lépések:\n\n- tesztek bővítése\n- deploy\n- dokumentáció"}]}}
