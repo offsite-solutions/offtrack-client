@@ -72,3 +72,34 @@ test('a publikus klónból telepítve a régi útvonalú hookok cserélődnek, a
   const foreign = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node /x/other-tool/hook.mjs' }] }] } };
   assert.deepEqual(unpatchSettings(foreign), foreign);
 });
+
+import { chooseLang } from '../install.mjs';
+import { readFileSync as rf, mkdtempSync as mkt, writeFileSync as wf } from 'node:fs';
+import { tmpdir as td } from 'node:os';
+import { join as jn } from 'node:path';
+import { execFileSync as ex } from 'node:child_process';
+
+test('nyelv: a kapcsoló, majd a mentett, végül a magyar', () => {
+  assert.equal(chooseLang(undefined, undefined), 'hu');
+  assert.equal(chooseLang(undefined, 'en'), 'en');
+  assert.equal(chooseLang('hu', 'en'), 'hu');
+  assert.throws(() => chooseLang('de', undefined), /hu, en/);
+});
+
+test('az angol blokk angol jelentést kér, és ugyanúgy utal a skillre', () => {
+  const en = rf(new URL('../claude-md.en.md', import.meta.url), 'utf8');
+  assert.ok(en.includes('in English'));
+  assert.ok(!/magyar|Megálló/.test(en));
+  for (const k of ['offtrack_report', 'offtrack_update', 'offtrack_link', 'offtrack_new_thread', 'kind: stop', 'kind: branch', 'kind: manual', 'kind: idea', '`offtrack` skill']) assert.ok(en.includes(k), k);
+});
+
+test('install --lang en az angol blokkot írja be', () => {
+  const dir = mkt(jn(td(), 'offtrack-lang-'));
+  const md = jn(dir, 'CLAUDE.md'); const st = jn(dir, 'settings.json');
+  wf(md, '# saját\n'); wf(st, '{}');
+  const inst = new URL('../install.mjs', import.meta.url).pathname;
+  ex('node', [inst, 'install', '--settings', st, '--claude-md', md, '--lang', 'en']);
+  assert.ok(rf(md, 'utf8').includes('in English'));
+  ex('node', [inst, 'install', '--settings', st, '--claude-md', md, '--lang', 'hu']);
+  assert.ok(rf(md, 'utf8').includes('magyarul'));
+});

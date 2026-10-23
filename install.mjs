@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // offtrack telepítő: hookok a ~/.claude/settings.json-ba, MCP szerver felhasználói szinten,
 // szabályok a ~/.claude/CLAUDE.md-be, és egy `offtrack` parancs a ~/.local/bin-be.
-// Használat: node install.mjs install|uninstall [--settings <fájl>] [--claude-md <fájl>]
+// Használat: node install.mjs install|uninstall [--lang hu|en] [--settings <fájl>] [--claude-md <fájl>]
 // A --settings / --claude-md kapcsolóval csak a megadott fájlokat javítja (próba másolaton).
 import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync, symlinkSync, unlinkSync, lstatSync, readlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -57,6 +57,13 @@ export function unpatchClaudeMd(text) {
   return before + after;
 }
 
+// A CLAUDE.md-blokk nyelve: a --lang kapcsoló, ennek hiányában a korábban mentett, végül a magyar.
+const LANGS = ['hu', 'en'];
+export function chooseLang(flag, saved) {
+  if (flag !== undefined && !LANGS.includes(flag)) throw new Error(`Ismeretlen nyelv: ${flag} (lehet: ${LANGS.join(', ')})`);
+  return flag ?? (LANGS.includes(saved) ? saved : 'hu');
+}
+
 function stamp(d = new Date()) {
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
@@ -80,16 +87,20 @@ function run(cmd, opts) {
   const claudeMd = opts.claudeMd ?? join(homedir(), '.claude', 'CLAUDE.md');
   const filesOnly = Boolean(opts.settings || opts.claudeMd);
   const hookCmd = `node ${join(HERE, 'hook.mjs')}`;
-  const block = readFileSync(join(HERE, 'claude-md.md'), 'utf8');
+  const conf = join(homedir(), '.config', 'offtrack');
+  const confFile = join(conf, 'config.json');
+  let saved = {};
+  try { saved = JSON.parse(readFileSync(confFile, 'utf8')); } catch { /* még nincs */ }
+  const lang = chooseLang(opts.lang, saved.lang);
+  const block = readFileSync(join(HERE, lang === 'en' ? 'claude-md.en.md' : 'claude-md.md'), 'utf8');
 
   if (cmd === 'install') {
     rewrite(settingsFile, (t) => JSON.stringify(patchSettings(JSON.parse(t ?? '{}'), hookCmd), null, 2) + '\n');
     rewrite(claudeMd, (t) => patchClaudeMd(t ?? '', block));
     if (filesOnly) return;
     if (!mcpRegistered()) execFileSync('claude', ['mcp', 'add', '--scope', 'user', 'offtrack', '--', 'node', join(HERE, 'mcp.mjs')], { stdio: 'inherit' });
-    const conf = join(homedir(), '.config', 'offtrack');
     mkdirSync(conf, { recursive: true, mode: 0o700 });
-    if (!existsSync(join(conf, 'config.json'))) writeFileSync(join(conf, 'config.json'), JSON.stringify({ url: 'https://offtrack.offsite-solutions.com' }) + '\n', { mode: 0o600 });
+    writeFileSync(confFile, JSON.stringify({ url: 'https://offtrack.offsite-solutions.com', ...saved, lang }) + '\n', { mode: 0o600 });
     const bin = join(homedir(), '.local', 'bin');
     mkdirSync(bin, { recursive: true });
     const link = join(bin, 'offtrack');
@@ -122,10 +133,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   for (let i = 0; i < rest.length; i += 2) {
     if (rest[i] === '--settings') opts.settings = rest[i + 1];
     else if (rest[i] === '--claude-md') opts.claudeMd = rest[i + 1];
+    else if (rest[i] === '--lang') opts.lang = rest[i + 1];
   }
   if (!['install', 'uninstall'].includes(cmd)) {
-    console.error('Használat: node install.mjs install|uninstall [--settings <fájl>] [--claude-md <fájl>]');
+    console.error('Használat: node install.mjs install|uninstall [--lang hu|en] [--settings <fájl>] [--claude-md <fájl>]');
     process.exit(2);
   }
-  run(cmd, opts);
+  try { run(cmd, opts); } catch (e) { console.error(e.message); process.exit(2); }
 }
