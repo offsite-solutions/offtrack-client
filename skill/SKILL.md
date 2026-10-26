@@ -1,6 +1,6 @@
 ---
 name: offtrack
-description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
+description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit vagy egy projekt nyitott tételeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
 ---
 
 # offtrack
@@ -17,6 +17,8 @@ Az offtrack az Offsite Solutions feladatkövetője: minden Claude Code session j
 ## Szálválasztás
 
 Az indulási `[offtrack]` blokk felsorolja a szálakat. Ha a munka illik egybe, a jelentésnél add meg a `thread_id`-t. Ha új, több lépéses munkafolyam kezdődik, `offtrack_new_thread`. Kétség esetén ne nyiss újat: az alapszálra jelents (`thread_id` nélkül). Ha a blokk óta új szál jöhetett létre: `offtrack_threads`.
+
+**Nyitott tételek:** `offtrack_items` (vagy `offtrack list [<projekt>]`): a nyitott ágak, kézi teendők és ötletek szálanként. Projekt nélkül a session projektjéé. Akkor hívd, ha a felhasználó a nyitott tételeket kéri, vagy a blokk óta változhattak.
 
 ## Egy ág felvétele
 

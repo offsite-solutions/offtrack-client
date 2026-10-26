@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import { send, flushQueue, queueLength } from '../lib/api.mjs';
 import { home, L, lang } from '../lib/config.mjs';
 import { currentSession } from '../lib/session.mjs';
+import { claudePid } from '../lib/proc.mjs';
+import { formatItems } from '../lib/items.mjs';
 import { listSessions, condense, groupByProject } from '../lib/backfill/sessions.mjs';
 import { summarize } from '../lib/backfill/summarize.mjs';
 import { writeProposal, parseProposal, slug } from '../lib/backfill/proposal.mjs';
@@ -14,6 +16,7 @@ const HELP_HU = `Használat:
   offtrack whoami                              ki vagyok (a token alapján)
   offtrack login                               a kliens-token beállítása ezen a gépen (a tokent a bemenetről olvassa)
   offtrack projects                            a projektjeim, a gyökérkönyvtáraim és a tagok
+  offtrack list [<projekt>]                    a projekt nyitott tételei szálanként (projekt nélkül a hívó sessioné)
   offtrack attach <projekt> [--new]            a hívó Claude Code session csatolása egy projekthez (--new: új projekt)
   offtrack merge <honnan> <hova>               egy projekt beolvasztása egy másikba (mindkettő gazdájaként)
   offtrack root <projekt> <könyvtár>          gyökérkönyvtár (az alkönyvtárakkal); a projekt létrejön, ha nincs
@@ -33,12 +36,13 @@ Adminisztráció:
   offtrack admin user disable <email> [--transfer-to <email>]
   offtrack admin token <email> [címke]
   offtrack admin token revoke <email>
-  offtrack admin allow list | add <domain vagy cím> | remove <domain vagy cím>`;
+  offtrack admin allow list | add <domain, cím vagy '*' (bárki)> | remove <domain, cím vagy '*'>`;
 
 const HELP_EN = `Usage:
   offtrack whoami                              who am I (by the token)
   offtrack login                               set the client token on this machine (read from standard input)
   offtrack projects                            my projects, my root directories and the members
+  offtrack list [<project>]                    the project's open items by thread (without project, the calling session's)
   offtrack attach <project> [--new]            attach the calling Claude Code session to a project (--new: new project)
   offtrack merge <from> <into>                 merge a project into another (as owner of both)
   offtrack root <project> <directory>          root directory (with its subdirectories); creates the project if missing
@@ -58,7 +62,7 @@ Administration:
   offtrack admin user disable <email> [--transfer-to <email>]
   offtrack admin token <email> [label]
   offtrack admin token revoke <email>
-  offtrack admin allow list | add <domain or address> | remove <domain or address>`;
+  offtrack admin allow list | add <domain, address or '*' (anyone)> | remove <domain, address or '*'>`;
 const help = () => L(HELP_HU, HELP_EN);
 
 const enc = encodeURIComponent;
@@ -241,6 +245,16 @@ async function main([cmd, ...args]) {
         console.log(`${label}  ${role}  ${(p.paths ?? []).join(', ')}${members}`.replace(/ {3,}/g, '  '));
       }
     });
+  }
+  if (cmd === 'list' && args.length <= 1) {
+    let slug = args[0];
+    if (!slug) {
+      const s = await get(`/api/v1/sessions/by-pid/${claudePid()}`);
+      if (s.status === 404) return fail(L('Nem találom a sessiont: add meg a projektet (offtrack list <projekt>).', 'Cannot find the session: name the project (offtrack list <project>).'));
+      if (!s.ok) return fail(errorOf(s));
+      slug = s.data.project.slug;
+    }
+    return call(get(`/api/v1/projects/${enc(slug)}/items`), (d) => console.log(formatItems(d)));
   }
   if (cmd === 'merge' && args.length === 2) {
     const [from, into] = args;

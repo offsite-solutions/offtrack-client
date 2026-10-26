@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { send, enqueue, flushQueue } from './lib/api.mjs';
 import { currentSession } from './lib/session.mjs';
 import { L } from './lib/config.mjs';
+import { formatItems } from './lib/items.mjs';
 
 const OFFLINE = L('A szerver nem érhető el; a jelentés helyben sorba került, és később továbbítódik.', 'The server is unreachable; the report was queued locally and will be sent later.');
 const UNREACHABLE = L('A szerver nem érhető el.', 'The server is unreachable.');
@@ -51,6 +52,21 @@ server.registerTool('offtrack_threads', {
   const t = await read(`/api/v1/projects/${encodeURIComponent(s.data.project.slug)}/threads`);
   if (t.error) return t.error;
   return ok(`${s.data.project.name}: ${t.data.map((x) => `#${x.id} ${x.title}`).join(', ')}`, t.data);
+});
+
+server.registerTool('offtrack_items', {
+  description: L('Egy projekt nyitott tételei (nyitott ágak, kézi teendők, ötletek) szálanként. project nélkül a session projektje. Akkor hívd, ha a felhasználó a nyitott tételeket kéri, vagy az indulási [offtrack] blokk óta változhattak.', 'The open items of a project (open branches, manual tasks, ideas) by thread. Without project, the session\'s project. Call it when the user asks for the open items, or when they may have changed since the [offtrack] block at startup.'),
+  inputSchema: { project: z.string().min(1).max(200).optional() },
+}, async ({ project }) => {
+  let slug = project;
+  if (!slug) {
+    const s = await read(`/api/v1/sessions/by-pid/${process.ppid}`);
+    if (s.error) return s.error;
+    slug = s.data.project.slug;
+  }
+  const r = await read(`/api/v1/projects/${encodeURIComponent(slug)}/items`);
+  if (r.error) return r.error;
+  return ok(formatItems(r.data), r.data);
 });
 
 server.registerTool('offtrack_report', {

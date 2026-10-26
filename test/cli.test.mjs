@@ -227,3 +227,27 @@ test('mobile revoke kiírja a számot', async () => {
   assert.equal(srv.requests[0].method, 'DELETE');
   assert.ok(r.stdout.includes('Visszavonva: 1 connector-URL.'));
 });
+
+test('list projekttel', async () => {
+  const srv = await recorder(() => [200, [{ id: 1, title: 'offtrack', items: [{ id: 7, kind: 'branch', text: 'teszt', status: 'open' }] }]]);
+  const r = await cli(home(srv.url), ['list', 'offtrack']);
+  await srv.close();
+  assert.equal(r.status, 0);
+  assert.equal(srv.requests[0].url, '/api/v1/projects/offtrack/items');
+  assert.equal(r.stdout, '#1 offtrack\n  #7 teszt\n');
+});
+
+test('list a session projektjével, ismeretlen sessionnél hiba', async () => {
+  const srv = await recorder((req) => (req.url.startsWith('/api/v1/sessions/by-pid/')
+    ? [200, { session_id: 's1', project: { slug: 'greengo', name: 'greengo' } }] : [200, []]));
+  const r = await cli(home(srv.url), ['list']);
+  await srv.close();
+  assert.equal(srv.requests[1].url, '/api/v1/projects/greengo/items');
+  assert.equal(r.stdout, 'Nincs nyitott tétel.\n');
+
+  const srv2 = await recorder(() => [404, { error: 'nincs ilyen session' }]);
+  const r2 = await cli(home(srv2.url), ['list']);
+  await srv2.close();
+  assert.equal(r2.status, 1);
+  assert.ok(r2.stderr.includes('add meg a projektet'));
+});

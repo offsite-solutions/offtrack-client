@@ -1,6 +1,6 @@
 ---
 name: offtrack
-description: Operations of the offtrack tracker. Load it when the user asks for their projects, wants to attach a session to a project, merge projects, share or hand over a project, publish an idea, assign a manual task to someone else, pick up an offtrack branch from a prompt pasted from the clipboard, or manage users, tokens or the allowlist, or when called as /offtrack.
+description: Operations of the offtrack tracker. Load it when the user asks for their projects or a project's open items, wants to attach a session to a project, merge projects, share or hand over a project, publish an idea, assign a manual task to someone else, pick up an offtrack branch from a prompt pasted from the clipboard, or manage users, tokens or the allowlist, or when called as /offtrack.
 ---
 
 # offtrack
@@ -17,6 +17,8 @@ offtrack is the Offsite Solutions tracker: every Claude Code session reports to 
 ## Choosing a thread
 
 The `[offtrack]` block at startup lists the threads. If the work fits one, give its `thread_id` when reporting. If a new multi-step workflow starts, use `offtrack_new_thread`. When in doubt, don't open a new one: report to the default thread (without `thread_id`). If a new thread may have appeared since the block: `offtrack_threads`.
+
+**Open items:** `offtrack_items` (or `offtrack list [<project>]`): the open branches, manual tasks and ideas by thread. Without a project, the session's project. Call it when the user asks for the open items, or when they may have changed since the block.
 
 ## Picking up a branch
 

@@ -77,7 +77,7 @@ test('4xx hiba', async () => {
 test('tools/list', async () => {
   const res = await mcp(home(), [{ id: 1, method: 'tools/list' }]);
   assert.deepEqual(res[1].result.tools.map((t) => t.name).sort(), [
-    'offtrack_attach', 'offtrack_link', 'offtrack_new_thread', 'offtrack_projects', 'offtrack_report', 'offtrack_threads', 'offtrack_update',
+    'offtrack_attach', 'offtrack_items', 'offtrack_link', 'offtrack_new_thread', 'offtrack_projects', 'offtrack_report', 'offtrack_threads', 'offtrack_update',
   ]);
 });
 
@@ -118,4 +118,28 @@ test('MCP publish', async () => {
   await mcp(home(srv.url), [call(1, 'offtrack_update', { item_id: 5, publish: true })]);
   await srv.close();
   assert.ok(srv.requests.some((r) => r.method === 'POST' && r.url === '/api/v1/items/5/publish'));
+});
+
+const ITEMS = [{ id: 1, title: 'offtrack', is_default: 1, items: [
+  { id: 7, kind: 'idea', text: 'iOS app', status: 'open', due_date: null, assignee: null },
+  { id: 9, kind: 'manual', text: 'nyomtatás', status: 'in_progress', due_date: '2026-11-01', assignee: 'Péter' },
+] }];
+
+test('items a session projektjével', async () => {
+  const srv = await recorder((req) => (req.url.startsWith('/api/v1/sessions/by-pid/')
+    ? [200, { session_id: 's1', project: { slug: 'offtrack', name: 'offtrack' } }] : [200, ITEMS]));
+  const res = await mcp(home(srv.url), [call(1, 'offtrack_items', {})]);
+  await srv.close();
+  assert.equal(srv.requests[1].url, '/api/v1/projects/offtrack/items');
+  const out = text(res[1]);
+  assert.ok(out.startsWith('#1 offtrack\n  #7 iOS app [ötlet]\n  #9 nyomtatás [kézi: Péter] [folyamatban] [határidő: 2026-11-01]'));
+});
+
+test('items megadott projekttel, üres lista', async () => {
+  const srv = await recorder(() => [200, []]);
+  const res = await mcp(home(srv.url), [call(1, 'offtrack_items', { project: 'green go' })]);
+  await srv.close();
+  assert.equal(srv.requests.length, 1);
+  assert.equal(srv.requests[0].url, '/api/v1/projects/green%20go/items');
+  assert.ok(text(res[1]).startsWith('Nincs nyitott tétel.'));
 });
