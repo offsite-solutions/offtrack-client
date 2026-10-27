@@ -7,6 +7,10 @@ description: Operations of the offtrack tracker. Load it when the user asks for 
 
 offtrack is the Offsite Solutions tracker: every Claude Code session reports to it, and the user sees on a map where every thread stands. The reporting rules are in the offtrack block of `~/.claude/CLAUDE.md`; this skill covers the less frequent operations.
 
+## Called without arguments
+
+If the user calls it without arguments (`/offtrack`), list the available commands. Run `offtrack help 2>&1` (exit code 2 is expected here). Show the output grouped, with a one-line explanation per group: projects, items, sharing, mobile connector, backfill, administration. Add that the common operations ("show the open items", "attach this session to project X") can also be asked for in plain words. Don't run any other command meanwhile.
+
 ## Concepts
 
 - **Project:** one or more root directories; everyone sets the roots on their own machine. It has an owner and members; private by default.
