@@ -15,19 +15,19 @@ import { writeProposal, parseProposal, slug } from '../lib/backfill/proposal.mjs
 const HELP_HU = `Használat:
   offtrack install [--lang hu|en]              hookok, MCP szerver, skill és CLAUDE.md-szabályok telepítése
   offtrack uninstall                           mindezek eltávolítása
-  offtrack whoami                              ki vagyok (a token alapján)
+  offtrack whoami                              melyik felhasználóként jelent ez a gép
   offtrack login                               a kliens-token beállítása ezen a gépen (a tokent a bemenetről olvassa)
   offtrack projects                            a projektjeim, a gyökérkönyvtáraim és a tagok
   offtrack list [<projekt>]                    a projekt nyitott tételei szálanként (projekt nélkül a hívó sessioné)
   offtrack attach <projekt> [--new]            a hívó Claude Code session csatolása egy projekthez (--new: új projekt)
-  offtrack merge <honnan> <hova>               egy projekt beolvasztása egy másikba (mindkettő gazdájaként)
+  offtrack merge <honnan> <hova>               egy projekt beolvasztása egy másikba (mindkettő tulajdonosaként)
   offtrack root <projekt> <könyvtár>          gyökérkönyvtár (az alkönyvtárakkal); a projekt létrejön, ha nincs
-  offtrack rename <projekt> <megjelenített név> barátságos név (például GreenGo); üres névvel törlés
-  offtrack share <projekt> <email>             projekt megosztása (gazdaként)
-  offtrack unshare <projekt> <email>           tag eltávolítása (gazdaként)
-  offtrack transfer <projekt> <email>          a gazdaság átadása egy tagnak
+  offtrack rename <projekt> <megjelenített név> megjelenített név (például GreenGo); üres névvel törlődik
+  offtrack share <projekt> <email>             projekt megosztása (tulajdonosként)
+  offtrack unshare <projekt> <email>           tag eltávolítása (tulajdonosként)
+  offtrack transfer <projekt> <email>          a tulajdonjog átadása egy tagnak
   offtrack publish <tétel-id>                  saját ötlet publikálása a projekt tagjainak
-  offtrack flush                               az offline sor elküldése
+  offtrack flush                               a sorban álló jelentések elküldése
   offtrack mobile url | revoke                 a mobil Claude connector titkos URL-je (új URL), illetve visszavonása
   offtrack backfill [--days 60] [--project <név>] [--dry]
                                                javaslatfájlok a régi sessionökből (~/offtrack-backfill/)
@@ -244,7 +244,7 @@ async function main([cmd, ...args]) {
   if (cmd === 'projects' && args.length === 0) {
     return call(get('/api/v1/projects'), (list) => {
       for (const p of list) {
-        const role = p.role === 'owner' ? L('[gazda]', '[owner]') : p.role === 'member' ? L('[tag]', '[member]') : '';
+        const role = p.role === 'owner' ? L('[tulajdonos]', '[owner]') : p.role === 'member' ? L('[tag]', '[member]') : '';
         const members = (p.members ?? []).length > 1 ? `  (${L('tagok', 'members')}: ${p.members.join(', ')})` : '';
         const label = p.display_name ? `${p.display_name} (${p.name})` : p.name;
         console.log(`${label}  ${role}  ${(p.paths ?? []).join(', ')}${members}`.replace(/ {3,}/g, '  '));

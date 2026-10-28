@@ -119,11 +119,11 @@ server.registerTool('offtrack_link', {
 });
 
 server.registerTool('offtrack_projects', {
-  description: L('A felhasználó offtrack-projektjei (szerep: gazda vagy tag, a saját gyökérkönyvtárai, a tagok). Akkor hívd, ha a felhasználó a projekteket kéri, vagy csatolás előtt.', 'The user\'s offtrack projects (role: owner or member, their own root directories, the members). Call it when the user asks for the projects, or before attaching.'),
+  description: L('A felhasználó offtrack-projektjei (szerep: tulajdonos vagy tag, a saját gyökérkönyvtárai, a tagok). Akkor hívd, ha a felhasználó a projekteket kéri, vagy csatolás előtt.', 'The user\'s offtrack projects (role: owner or member, their own root directories, the members). Call it when the user asks for the projects, or before attaching.'),
 }, async () => {
   const r = await read('/api/v1/projects');
   if (r.error) return r.error;
-  return ok(r.data.map((p) => `${p.display_name ? `${p.display_name} (${p.name})` : p.name}  ${p.role === 'owner' ? L('[gazda]', '[owner]') : L('[tag]', '[member]')}  ${(p.paths ?? []).join(', ')}`).join('\n'),
+  return ok(r.data.map((p) => `${p.display_name ? `${p.display_name} (${p.name})` : p.name}  ${p.role === 'owner' ? L('[tulajdonos]', '[owner]') : L('[tag]', '[member]')}  ${(p.paths ?? []).join(', ')}`).join('\n'),
     r.data.map(({ slug, ...p }) => p));
 });
 

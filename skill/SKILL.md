@@ -13,9 +13,9 @@ Ha a felhasználó argumentum nélkül hívja (`/offtrack`), sorold fel az elér
 
 ## Fogalmak
 
-- **Projekt:** egy vagy több gyökérkönyvtár; a gyökereket mindenki a saját gépén jelöli ki. Gazdája és tagjai vannak; alapból privát.
+- **Projekt:** egy vagy több gyökérkönyvtár; a gyökereket mindenki a saját gépén jelöli ki. Van tulajdonosa, és lehetnek tagjai; alapból privát.
 - **Szál:** a projekten belüli munkafolyam; minden projektnek van alapszála.
-- **Megálló** (`stop`): lezárt lépés. **Nyitott ág** (`branch`): elvarratlan teendő. **Kézi teendő** (`manual`): valakinek kézzel kell elvégeznie. **Ötlet** (`idea`): jövőbeli teendő, privát, amíg a gazdája nem publikálja.
+- **Megálló** (`stop`): lezárt lépés. **Nyitott ág** (`branch`): elvarratlan teendő. **Kézi teendő** (`manual`): valakinek kézzel kell elvégeznie. **Ötlet** (`idea`): jövőbeli teendő, privát, amíg a tulajdonosa nem publikálja.
 - **Álnév:** a beolvasztott projekt régi neve; a célprojektre mutat.
 
 ## Szálválasztás
@@ -34,16 +34,16 @@ A felhasználó a térképről egy promptot másol be, amely egy nyitott ágat �
 
 ## Projektek, csatolás, beolvasztás
 
-- **Lista:** `offtrack_projects` (vagy `offtrack projects`): név, szerep (gazda/tag), a felhasználó gyökerei, tagok. A projektekre mindig a nevükkel hivatkozz.
+- **Lista:** `offtrack_projects` (vagy `offtrack projects`): név, szerep (tulajdonos/tag), a felhasználó gyökerei, tagok. A projektekre mindig a nevükkel hivatkozz.
 - **Csatolás:** ha a felhasználó azt kéri, hogy ezt a sessiont tedd egy projekthez: `offtrack_attach {project}`. A session könyvtára az alkönyvtáraival a projekthez kerül, és a későbbi sessionök is oda jelentenek. Ha a könyvtárhoz automatikusan jött létre projekt, az beolvad a célba. Ha a projekt nem létezik, kérdezd meg, létrehozza-e, és csak igen esetén: `create: true`.
 - **Gyökér:** `offtrack root <projekt> <könyvtár>` (Bash): a könyvtár az alkönyvtáraival a projekthez kerül; ha a projekt nincs, létrejön.
-- **Beolvasztás:** `offtrack merge <honnan> <hova>` (Bash). Csak mindkét projekt gazdája teheti meg. **Nem vonható vissza:** előtte írd le, mi kerül át (szálak, tételek, sessionök, könyvtárak, tagok), és kérj megerősítést.
+- **Beolvasztás:** `offtrack merge <honnan> <hova>` (Bash). Csak az teheti meg, aki mindkét projekt tulajdonosa. **Nem vonható vissza:** előtte írd le, mi kerül át (szálak, tételek, sessionök, könyvtárak, tagok), és kérj megerősítést.
 
 ## Megosztás, átadás, publikálás, kijelölés
 
 Csak a felhasználó kifejezett kérésére:
-- `offtrack share <projekt> <email>` / `offtrack unshare <projekt> <email>`: a tagok mindent látnak a projektben (a privát ötletek kivételével), jelenthetnek, és lezárhatják bárki tételét. Csak a gazda oszthat meg.
-- `offtrack transfer <projekt> <email>`: a gazdaság átadása egy tagnak; a régi gazda tag marad.
+- `offtrack share <projekt> <email>` / `offtrack unshare <projekt> <email>`: a tagok mindent látnak a projektben (a privát ötletek kivételével), jelenthetnek, és lezárhatják bárki tételét. Csak a tulajdonos oszthat meg.
+- `offtrack transfer <projekt> <email>`: a tulajdonjog átadása egy tagnak; a korábbi tulajdonos tag marad.
 - `offtrack publish <tétel-id>` vagy `offtrack_update {item_id, publish: true}`: a saját ötlet láthatóvá tétele a tagoknak.
 - Kézi teendő másnak: `offtrack_report {kind: "manual", text, assignee: "<email>"}`; a címzettnek tagnak kell lennie.
 
@@ -74,6 +74,6 @@ Tokent soha ne írj ki, ne másolj fájlba, commitba, jelentésbe vagy offtrack-
 ## Hibák
 
 - **`404`:** nincs ilyen, vagy a felhasználó nem láthatja. Ne találgass; kérdezd meg a pontos nevet, vagy listázz.
-- **`403`:** látható, de a művelet a gazdáé.
+- **`403`:** látható, de a művelet a tulajdonosé.
 - **„sorba került”:** a szerver nem érhető el; a jelentés helyben vár, és magától továbbítódik. Kézzel: `offtrack flush`.
 - **Nincs session:** az `offtrack` hookjai nincsenek telepítve, vagy a parancs nem Claude Code sessionből fut.
