@@ -12,7 +12,7 @@ offtrack login        # paste your client token (generate it on the install page
 offtrack whoami
 ```
 
-Requirements: macOS, Claude Code, Node.js 22 or newer, git. Update by running the `npm install -g` command again; remove with `offtrack uninstall`, then `npm uninstall -g offtrack-client`.
+Requirements: macOS, Claude Code, Node.js 22 or newer, git. Update by running the `npm install -g` command again (`offtrack version` shows whether a newer [release](https://github.com/offsite-solutions/offtrack-client/releases) exists; sessions also mention it at startup); remove with `offtrack uninstall`, then `npm uninstall -g offtrack-client`.
 
 This repository is a published copy of the `client/` folder of the offtrack project; changes are made there.
 
@@ -25,6 +25,6 @@ Az [offtrack](https://offtrack.offsite-solutions.com) Mac-kliense. Az offtrack a
 **Részletes telepítési útmutató (magyarul és angolul):** https://offtrack.offsite-solutions.com/install
 **Használati útmutató:** https://offtrack.offsite-solutions.com/guide
 
-A telepítés a fenti parancsokkal megy, magyarul `offtrack install --lang hu`-val (a CLAUDE.md-blokk, a parancs, a skill és a szerver üzenetei is magyarok lesznek); a kliens-tokent a telepítési oldalon, belépve generálhatod. Frissítés: ugyanaz az `npm install -g` parancs; eltávolítás: `offtrack uninstall`, majd `npm uninstall -g offtrack-client`.
+A telepítés a fenti parancsokkal megy, magyarul `offtrack install --lang hu`-val (a CLAUDE.md-blokk, a parancs, a skill és a szerver üzenetei is magyarok lesznek); a kliens-tokent a telepítési oldalon, belépve generálhatod. Frissítés: ugyanaz az `npm install -g` parancs (az `offtrack version` megmutatja, van-e újabb [release](https://github.com/offsite-solutions/offtrack-client/releases); a sessionök indításkor is szólnak); eltávolítás: `offtrack uninstall`, majd `npm uninstall -g offtrack-client`.
 
 Licenc: MIT.

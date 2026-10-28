@@ -5,7 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { send, enqueue, flushQueue } from './lib/api.mjs';
 import { currentSession } from './lib/session.mjs';
-import { L } from './lib/config.mjs';
+import { L, VERSION } from './lib/config.mjs';
 import { formatItems } from './lib/items.mjs';
 
 const OFFLINE = L('A szerver nem érhető el; a jelentés helyben sorba került, és később továbbítódik.', 'The server is unreachable; the report was queued locally and will be sent later.');
@@ -42,7 +42,7 @@ async function read(path) {
   return { error: fail(UNREACHABLE) };
 }
 
-const server = new McpServer({ name: 'offtrack', version: '1.0.0' });
+const server = new McpServer({ name: 'offtrack', version: VERSION });
 
 server.registerTool('offtrack_threads', {
   description: L('A session projektjének aktív szálai (id, cím). Akkor hívd, ha az indulási [offtrack] blokk óta új szál jöhetett létre, vagy szálat kell választanod.', 'The active threads of the session\'s project (id, title). Call it when a new thread may have appeared since the [offtrack] block at startup, or when you need to pick a thread.'),

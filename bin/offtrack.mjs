@@ -4,7 +4,7 @@ import { writeFileSync, chmodSync, readFileSync, renameSync, mkdirSync, existsSy
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { send, flushQueue, queueLength } from '../lib/api.mjs';
-import { home, L, lang } from '../lib/config.mjs';
+import { home, L, lang, VERSION, UPDATE_COMMAND } from '../lib/config.mjs';
 import { currentSession } from '../lib/session.mjs';
 import { claudePid } from '../lib/proc.mjs';
 import { formatItems } from '../lib/items.mjs';
@@ -16,6 +16,7 @@ const HELP_HU = `Használat:
   offtrack install [--lang hu|en]              hookok, MCP szerver, skill és CLAUDE.md-szabályok telepítése
   offtrack uninstall                           mindezek eltávolítása
   offtrack whoami                              melyik felhasználóként jelent ez a gép
+  offtrack version                             a telepített verzió, és van-e újabb
   offtrack login                               a kliens-token beállítása ezen a gépen (a tokent a bemenetről olvassa)
   offtrack projects                            a projektjeim, a gyökérkönyvtáraim és a tagok
   offtrack list [<projekt>]                    a projekt nyitott tételei szálanként (projekt nélkül a hívó sessioné)
@@ -44,6 +45,7 @@ const HELP_EN = `Usage:
   offtrack install [--lang hu|en]              install the hooks, MCP server, skill and CLAUDE.md rules
   offtrack uninstall                           remove all of these
   offtrack whoami                              which user this machine reports as
+  offtrack version                             the installed version, and whether a newer one exists
   offtrack login                               set the client token on this machine (read from standard input)
   offtrack projects                            my projects, my root directories and the members
   offtrack list [<project>]                    the project's open items by thread (without project, the calling session's)
@@ -225,6 +227,15 @@ async function importFiles(files) {
 
 async function main([cmd, ...args]) {
   if (cmd === 'install' || cmd === 'uninstall') return (await import('../install.mjs')).main([cmd, ...args]);
+  if (cmd === 'version' && args.length === 0) {
+    const r = await get('/api/v1/client/latest');
+    const latest = r.ok ? r.data?.latest : null;
+    console.log(`offtrack ${VERSION}`);
+    if (!latest) console.log(L('A legfrissebb verzió most nem kérdezhető le.', 'The latest version is not available right now.'));
+    else if (latest === VERSION) console.log(L('Ez a legfrissebb verzió.', 'This is the latest version.'));
+    else console.log(L(`Újabb verzió: ${latest}. Frissítés: ${UPDATE_COMMAND}`, `Newer version: ${latest}. Update: ${UPDATE_COMMAND}`));
+    return 0;
+  }
   if (cmd === 'whoami' && args.length === 0) {
     return call(get('/api/v1/me'), (u) => console.log(`${u.name} <${u.email}>${u.is_admin ? ' (admin)' : ''}`));
   }

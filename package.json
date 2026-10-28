@@ -1,6 +1,6 @@
 {
   "name": "offtrack-client",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Mac client of offtrack: Claude Code hooks, MCP tools and CLI",
   "license": "MIT",
   "repository": {

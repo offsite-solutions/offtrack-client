@@ -110,3 +110,24 @@ test('OFFTRACK_DISABLE mellett a hook semmit nem csinál', async () => {
   assert.equal(srv.requests.length, 0);
   assert.equal(existsSync(join(dir, 'pids')), false);
 });
+
+test('SessionStart: a kliens elküldi a verzióját, és a felhasználónak szól, ha van újabb', async () => {
+  const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const srv = await recorder(() => [200, { context: 'X', update: { current: version, latest: '9.9.9' } }]);
+  const dir = home(srv.url);
+  const r = await run(dir, ev('SessionStart', { source: 'startup' }));
+  await srv.close();
+  assert.equal(srv.requests[0].headers['x-offtrack-client'], version);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.hookSpecificOutput.additionalContext, 'X');
+  assert.match(out.systemMessage, /9\.9\.9/);
+  assert.match(out.systemMessage, /npm install -g github:offsite-solutions\/offtrack-client/);
+});
+
+test('SessionStart: friss kliensnél nincs frissítési üzenet', async () => {
+  const srv = await recorder(() => [200, { context: 'X' }]);
+  const dir = home(srv.url);
+  const r = await run(dir, ev('SessionStart', { source: 'startup' }));
+  await srv.close();
+  assert.equal(JSON.parse(r.stdout).systemMessage, undefined);
+});

@@ -3,7 +3,7 @@
 // Mindig 0-val lép ki, és soha nem blokkol, ha a szerver nem érhető el.
 import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { send, enqueue, flushQueue } from './lib/api.mjs';
-import { pidFile, contextFile, L } from './lib/config.mjs';
+import { pidFile, contextFile, L, UPDATE_COMMAND } from './lib/config.mjs';
 import { claudePid } from './lib/proc.mjs';
 import { endsWithList } from './lib/transcript.mjs';
 
@@ -49,7 +49,11 @@ async function main() {
       const cached = readText(contextFile(input.cwd));
       context = cached ? `${OFFLINE()}\n${cached}` : OFFLINE();
     }
-    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: context } }));
+    // ha van újabb kliens, a felhasználónak is szólunk (a systemMessage a terminálban látszik, nem a modellnek szól)
+    const u = res.ok ? res.data?.update : null;
+    const notice = u?.latest ? L(`[offtrack] Új kliensverzió: ${u.latest} (ezen a gépen: ${u.current ?? 'régebbi'}). Frissítés: ${UPDATE_COMMAND}`,
+      `[offtrack] New client version: ${u.latest} (this machine: ${u.current ?? 'older'}). Update: ${UPDATE_COMMAND}`) : null;
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: context }, ...(notice ? { systemMessage: notice } : {}) }));
   } else if (event === 'Stop' && res.ok && res.data?.block === true) {
     process.stdout.write(JSON.stringify({ decision: 'block', reason: res.data.reason }));
   }

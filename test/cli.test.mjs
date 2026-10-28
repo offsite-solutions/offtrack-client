@@ -251,3 +251,15 @@ test('list a session projektjével, ismeretlen sessionnél hiba', async () => {
   assert.equal(r2.status, 1);
   assert.ok(r2.stderr.includes('add meg a projektet'));
 });
+
+test('version: a telepített és a legfrissebb verzió', async () => {
+  const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const srv = await recorder(() => [200, { latest: '9.9.9' }]);
+  const r = await cli(home(srv.url), ['version']);
+  await srv.close();
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, new RegExp(version.replace(/\./g, '\\.')));
+  assert.match(r.stdout, /9\.9\.9/);
+  assert.match(r.stdout, /npm install -g github:offsite-solutions\/offtrack-client/);
+  assert.equal(srv.requests[0].url, '/api/v1/client/latest');
+});
