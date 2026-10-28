@@ -73,6 +73,13 @@ test('a publikus klónból telepítve a régi útvonalú hookok cserélődnek, a
   assert.deepEqual(unpatchSettings(foreign), foreign);
 });
 
+test('a globális npm-csomagból telepített hook a klónból telepítettet váltja', () => {
+  const NPM = 'node /opt/homebrew/lib/node_modules/offtrack-client/hook.mjs';
+  const p = patchSettings(patchSettings(base, CMD), NPM);
+  assert.deepEqual(p.hooks.Stop.flatMap((g) => g.hooks.map((h) => h.command)), [NPM]);
+  assert.deepEqual(unpatchSettings(p), base);
+});
+
 import { chooseLang } from '../install.mjs';
 import { readFileSync as rf, mkdtempSync as mkt, writeFileSync as wf } from 'node:fs';
 import { tmpdir as td } from 'node:os';

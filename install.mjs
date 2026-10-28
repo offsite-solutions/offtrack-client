@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // offtrack telepítő: hookok a ~/.claude/settings.json-ba, MCP szerver felhasználói szinten,
-// szabályok a ~/.claude/CLAUDE.md-be, és egy `offtrack` parancs a ~/.local/bin-be.
-// Használat: node install.mjs install|uninstall [--lang en|hu] [--settings <fájl>] [--claude-md <fájl>]  (alapból angol)
+// szabályok a ~/.claude/CLAUDE.md-be, és klónból telepítve egy `offtrack` parancs a ~/.local/bin-be
+// (globális npm-telepítésnél a parancsot az npm hozza létre).
+// Használat: offtrack install|uninstall (vagy node install.mjs install|uninstall) [--lang en|hu] [--settings <fájl>] [--claude-md <fájl>]  (alapból angol)
 // A --settings / --claude-md kapcsolóval csak a megadott fájlokat javítja (próba másolaton).
 import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync, symlinkSync, unlinkSync, lstatSync, readlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -10,9 +11,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// Globális npm-telepítés (npm install -g github:…): a parancsot az npm teszi a PATH-ra.
+const FROM_NPM = /\/node_modules\//.test(HERE);
 const EVENTS = ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Stop', 'SessionEnd'];
-// A saját hookjaink felismerése: a monorepóból (…/offtrack/client/hook.mjs) vagy a publikus klónból
-// (…/offtrack-client/hook.mjs) telepített hook; más eszköz hook.mjs-ét nem érinti.
+// A saját hookjaink felismerése: a monorepóból (…/offtrack/client/hook.mjs), a publikus klónból
+// vagy a globális npm-csomagból (…/offtrack-client/hook.mjs) telepített hook; más eszköz hook.mjs-ét nem érinti.
 const OURS = /\/offtrack(\/client|-client)\/hook\.mjs\b/;
 const START = '<!-- offtrack:start -->';
 const END = '<!-- offtrack:end -->';
@@ -107,12 +110,14 @@ function run(cmd, opts) {
     if (!mcpRegistered()) execFileSync('claude', ['mcp', 'add', '--scope', 'user', 'offtrack', '--', 'node', join(HERE, 'mcp.mjs')], { stdio: 'inherit' });
     mkdirSync(conf, { recursive: true, mode: 0o700 });
     writeFileSync(confFile, JSON.stringify({ url: 'https://offtrack.offsite-solutions.com', ...saved, lang }) + '\n', { mode: 0o600 });
-    const bin = join(homedir(), '.local', 'bin');
-    mkdirSync(bin, { recursive: true });
-    const link = join(bin, 'offtrack');
-    try { lstatSync(link); unlinkSync(link); } catch { /* nincs még */ }
-    symlinkSync(join(HERE, 'bin', 'offtrack.mjs'), link);
-    console.log(`${M('parancs', 'command')}: ${link}`);
+    if (!FROM_NPM) {
+      const bin = join(homedir(), '.local', 'bin');
+      mkdirSync(bin, { recursive: true });
+      const link = join(bin, 'offtrack');
+      try { lstatSync(link); unlinkSync(link); } catch { /* nincs még */ }
+      symlinkSync(join(HERE, 'bin', 'offtrack.mjs'), link);
+      console.log(`${M('parancs', 'command')}: ${link}`);
+    }
     // A skill a tároló könyvtárára mutató link, így a tároló frissítése azonnal érvényes.
     const skills = join(homedir(), '.claude', 'skills');
     mkdirSync(skills, { recursive: true });
@@ -127,14 +132,15 @@ function run(cmd, opts) {
     rewrite(claudeMd, (t) => (t === null ? null : unpatchClaudeMd(t)));
     if (filesOnly) return;
     if (mcpRegistered()) execFileSync('claude', ['mcp', 'remove', '--scope', 'user', 'offtrack'], { stdio: 'inherit' });
-    try { unlinkSync(join(homedir(), '.local', 'bin', 'offtrack')); } catch { /* nincs */ }
+    const link = join(homedir(), '.local', 'bin', 'offtrack');
+    try { if (readlinkSync(link) === join(HERE, 'bin', 'offtrack.mjs')) unlinkSync(link); } catch { /* nincs */ }
     const skill = join(homedir(), '.claude', 'skills', 'offtrack');
     try { if (lstatSync(skill).isSymbolicLink() && [join(HERE, 'skill'), join(HERE, 'skill-en')].includes(readlinkSync(skill))) unlinkSync(skill); } catch { /* nincs */ }
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [cmd, ...rest] = process.argv.slice(2);
+// Belépési pont az `offtrack install|uninstall` parancsnak és a közvetlen futtatásnak; a visszatérési érték a kilépési kód.
+export function main([cmd, ...rest]) {
   const opts = {};
   for (let i = 0; i < rest.length; i += 2) {
     if (rest[i] === '--settings') opts.settings = rest[i + 1];
@@ -142,8 +148,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     else if (rest[i] === '--lang') opts.lang = rest[i + 1];
   }
   if (!['install', 'uninstall'].includes(cmd)) {
-    console.error('Usage / Használat: node install.mjs install|uninstall [--lang hu|en] [--settings <file>] [--claude-md <file>]');
-    process.exit(2);
+    console.error('Usage / Használat: offtrack install|uninstall [--lang hu|en] [--settings <file>] [--claude-md <file>]');
+    return 2;
   }
-  try { run(cmd, opts); } catch (e) { console.error(e.message); process.exit(2); }
+  try { run(cmd, opts); return 0; } catch (e) { console.error(e.message); return 2; }
 }
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = main(process.argv.slice(2));

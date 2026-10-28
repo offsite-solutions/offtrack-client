@@ -13,6 +13,8 @@ import { summarize } from '../lib/backfill/summarize.mjs';
 import { writeProposal, parseProposal, slug } from '../lib/backfill/proposal.mjs';
 
 const HELP_HU = `Használat:
+  offtrack install [--lang hu|en]              hookok, MCP szerver, skill és CLAUDE.md-szabályok telepítése
+  offtrack uninstall                           mindezek eltávolítása
   offtrack whoami                              ki vagyok (a token alapján)
   offtrack login                               a kliens-token beállítása ezen a gépen (a tokent a bemenetről olvassa)
   offtrack projects                            a projektjeim, a gyökérkönyvtáraim és a tagok
@@ -39,6 +41,8 @@ Adminisztráció:
   offtrack admin allow list | add <domain, cím vagy '*' (bárki)> | remove <domain, cím vagy '*'>`;
 
 const HELP_EN = `Usage:
+  offtrack install [--lang hu|en]              install the hooks, MCP server, skill and CLAUDE.md rules
+  offtrack uninstall                           remove all of these
   offtrack whoami                              who am I (by the token)
   offtrack login                               set the client token on this machine (read from standard input)
   offtrack projects                            my projects, my root directories and the members
@@ -220,6 +224,7 @@ async function importFiles(files) {
 }
 
 async function main([cmd, ...args]) {
+  if (cmd === 'install' || cmd === 'uninstall') return (await import('../install.mjs')).main([cmd, ...args]);
   if (cmd === 'whoami' && args.length === 0) {
     return call(get('/api/v1/me'), (u) => console.log(`${u.name} <${u.email}>${u.is_admin ? ' (admin)' : ''}`));
   }
