@@ -43,22 +43,22 @@ Adminisztráció:
 const HELP_EN = `Usage:
   offtrack install [--lang hu|en]              install the hooks, MCP server, skill and CLAUDE.md rules
   offtrack uninstall                           remove all of these
-  offtrack whoami                              who am I (by the token)
+  offtrack whoami                              which user this machine reports as
   offtrack login                               set the client token on this machine (read from standard input)
   offtrack projects                            my projects, my root directories and the members
   offtrack list [<project>]                    the project's open items by thread (without project, the calling session's)
   offtrack attach <project> [--new]            attach the calling Claude Code session to a project (--new: new project)
   offtrack merge <from> <into>                 merge a project into another (as owner of both)
   offtrack root <project> <directory>          root directory (with its subdirectories); creates the project if missing
-  offtrack rename <project> <display name>     friendly name (for example GreenGo); empty name removes it
+  offtrack rename <project> <display name>     display name (for example GreenGo); an empty name clears it
   offtrack share <project> <email>             share a project (as owner)
   offtrack unshare <project> <email>           remove a member (as owner)
   offtrack transfer <project> <email>          hand ownership to a member
   offtrack publish <item-id>                   publish your own idea to the project members
-  offtrack flush                               send the offline queue
+  offtrack flush                               send queued reports
   offtrack mobile url | revoke                 the secret URL of the mobile Claude connector (new URL), or revoke it
   offtrack backfill [--days 60] [--project <name>] [--dry]
-                                               proposal files from old sessions (~/offtrack-backfill/)
+                                               proposal files from past sessions (~/offtrack-backfill/)
   offtrack import <file…>                      upload a proposal file
 Administration:
   offtrack admin users
