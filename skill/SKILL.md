@@ -14,13 +14,13 @@ Ha a felhasználó argumentum nélkül hívja (`/offtrack`), sorold fel az elér
 ## Fogalmak
 
 - **Projekt:** egy vagy több gyökérkönyvtár; a gyökereket mindenki a saját gépén jelöli ki. Van tulajdonosa, és lehetnek tagjai; alapból privát.
-- **Szál:** a projekten belüli munkafolyam; minden projektnek van alapszála.
+- **Szál:** a projekten belüli munkafolyam; minden projektnek van fő szála.
 - **Megálló** (`stop`): lezárt lépés. **Nyitott ág** (`branch`): elvarratlan teendő. **Kézi teendő** (`manual`): valakinek kézzel kell elvégeznie. **Ötlet** (`idea`): jövőbeli teendő, privát, amíg a tulajdonosa nem publikálja.
 - **Álnév:** a beolvasztott projekt régi neve; a célprojektre mutat.
 
 ## Szálválasztás
 
-Az indulási `[offtrack]` blokk felsorolja a szálakat. Ha a munka illik egybe, a jelentésnél add meg a `thread_id`-t. Ha új, több lépéses munkafolyam kezdődik, `offtrack_new_thread`. Kétség esetén ne nyiss újat: az alapszálra jelents (`thread_id` nélkül). Ha a blokk óta új szál jöhetett létre: `offtrack_threads`.
+Az indulási `[offtrack]` blokk felsorolja a szálakat. Ha a munka illik egybe, a jelentésnél add meg a `thread_id`-t. Ha új, több lépéses munkafolyam kezdődik, `offtrack_new_thread`. Kétség esetén ne nyiss újat: a fő szálra jelents (`thread_id` nélkül). Ha a blokk óta új szál jöhetett létre: `offtrack_threads`.
 
 **Nyitott tételek:** `offtrack_items` (vagy `offtrack list [<projekt>]`): a nyitott ágak, kézi teendők és ötletek szálanként. Projekt nélkül a session projektjéé. Akkor hívd, ha a felhasználó a nyitott tételeket kéri, vagy a blokk óta változhattak.
 

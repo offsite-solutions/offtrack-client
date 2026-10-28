@@ -70,7 +70,7 @@ server.registerTool('offtrack_items', {
 });
 
 server.registerTool('offtrack_report', {
-  description: L('Jelentés az offtracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt alapszálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri.', 'Report to offtrack. kind: stop = a closed, self-contained step (milestone); branch = a to-do listed at the end of your answer (independent to-dos separately, one coherent list of suggestions as one branch), being stuck, or a question awaiting a decision; manual = something the user must do by hand; idea = an idea about the future, without asking (private until the user publishes it). text: 1–3 sentences, in English. Without thread_id it goes to the project\'s default thread. assignee: only for manual, the email of another project member, if the user asks.'),
+  description: L('Jelentés az offtracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt fő szálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri.', 'Report to offtrack. kind: stop = a closed, self-contained step (milestone); branch = a to-do listed at the end of your answer (independent to-dos separately, one coherent list of suggestions as one branch), being stuck, or a question awaiting a decision; manual = something the user must do by hand; idea = an idea about the future, without asking (private until the user publishes it). text: 1–3 sentences, in English. Without thread_id it goes to the project\'s main thread. assignee: only for manual, the email of another project member, if the user asks.'),
   inputSchema: {
     kind: z.enum(['stop', 'branch', 'manual', 'idea']),
     text: z.string().min(1).max(2000),
@@ -101,7 +101,7 @@ server.registerTool('offtrack_update', {
 });
 
 server.registerTool('offtrack_new_thread', {
-  description: L('Új szál a projektben: új, több lépéses munkafolyam, amely nem illik a meglévő szálakba. Kétség esetén ne nyiss újat, maradj az alapszálon.', 'A new thread in the project: a new, multi-step workflow that does not fit the existing threads. When in doubt, don\'t open a new one; stay on the default thread.'),
+  description: L('Új szál a projektben: új, több lépéses munkafolyam, amely nem illik a meglévő szálakba. Kétség esetén ne nyiss újat, maradj a fő szálon.', 'A new thread in the project: a new, multi-step workflow that does not fit the existing threads. When in doubt, don\'t open a new one; stay on the main thread.'),
   inputSchema: { title: z.string().min(1).max(200) },
 }, async ({ title }) => {
   const session_id = currentSession();

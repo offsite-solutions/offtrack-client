@@ -8,7 +8,7 @@ Report, but only in these situations (`offtrack_report`):
 - **Manual task** (`kind: manual`): what the user has to do by hand (physical, needs access, depends on a third party, printing, approval).
 - **Idea** (`kind: idea`): when the user refers to the future ("in the future", "later", "might be interesting later", "let's leave this for now") – without asking.
 - **Link** (`offtrack_link`): when you touch another project's code, server or configuration.
-- **New thread** (`offtrack_new_thread`): a new, multi-step workflow that does not fit the existing threads. When in doubt, the default thread.
+- **New thread** (`offtrack_new_thread`): a new, multi-step workflow that does not fit the existing threads. When in doubt, the main thread.
 
 Don't report single commands, file reads or small fixes. The text is 1–3 sentences, in English, focused on the outcome.
 

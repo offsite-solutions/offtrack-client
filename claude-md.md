@@ -8,7 +8,7 @@ Jelents, de csak ezekben a helyzetekben (`offtrack_report`):
 - **Kézi teendő** (`kind: manual`): amit a felhasználónak kell kézzel elvégeznie (fizikai, hozzáférést igénylő, harmadik félhez kötött, nyomtatás, jóváhagyás).
 - **Ötlet** (`kind: idea`): ha a felhasználó a jövőre utal („a jövőben”, „majd”, „később érdekes lehet”, „ezt most engedjük el”) – rákérdezés nélkül.
 - **Kapcsolat** (`offtrack_link`): ha más projekt kódját, szerverét vagy konfigurációját érinted.
-- **Új szál** (`offtrack_new_thread`): új, több lépéses munkafolyam, amely nem illik a meglévő szálakba. Kétség esetén az alapszál.
+- **Új szál** (`offtrack_new_thread`): új, több lépéses munkafolyam, amely nem illik a meglévő szálakba. Kétség esetén a fő szál.
 
 Ne jelents egyedi parancsot, fájlolvasást, apró javítást. A szöveg 1–3 mondat, magyarul, eredményközpontúan.
 

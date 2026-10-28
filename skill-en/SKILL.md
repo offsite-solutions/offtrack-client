@@ -14,13 +14,13 @@ If the user calls it without arguments (`/offtrack`), list the available command
 ## Concepts
 
 - **Project:** one or more root directories; everyone sets the roots on their own machine. It has an owner and members; private by default.
-- **Thread:** a workflow within the project; every project has a default thread.
+- **Thread:** a workflow within the project; every project has a main thread.
 - **Milestone** (`stop`): a closed step. **Open branch** (`branch`): an unfinished to-do. **Manual task** (`manual`): someone has to do it by hand. **Idea** (`idea`): a future to-do, private until its owner publishes it.
 - **Alias:** the old name of a merged project; it points to the target project.
 
 ## Choosing a thread
 
-The `[offtrack]` block at startup lists the threads. If the work fits one, give its `thread_id` when reporting. If a new multi-step workflow starts, use `offtrack_new_thread`. When in doubt, don't open a new one: report to the default thread (without `thread_id`). If a new thread may have appeared since the block: `offtrack_threads`.
+The `[offtrack]` block at startup lists the threads. If the work fits one, give its `thread_id` when reporting. If a new multi-step workflow starts, use `offtrack_new_thread`. When in doubt, don't open a new one: report to the main thread (without `thread_id`). If a new thread may have appeared since the block: `offtrack_threads`.
 
 **Open items:** `offtrack_items` (or `offtrack list [<project>]`): the open branches, manual tasks and ideas by thread. Without a project, the session's project. Call it when the user asks for the open items, or when they may have changed since the block.
 
