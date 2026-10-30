@@ -119,7 +119,7 @@ function run(cmd, opts) {
       console.log(`${M('parancs', 'command')}: ${link}`);
     }
     // A skill a tároló könyvtárára mutató link, így a tároló frissítése azonnal érvényes.
-    // Az angol a skills/ alatt van, mert a skills.sh CLI-je ott keresi; a magyar nem kerül a listára.
+    // Az angol a skills/ alatt van, mert a skills.sh CLI-je ott keresi; a magyart a metadata.internal rejti el előle.
     const skills = join(homedir(), '.claude', 'skills');
     mkdirSync(skills, { recursive: true });
     const skill = join(skills, 'offtrack');

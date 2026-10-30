@@ -1,6 +1,8 @@
 ---
 name: offtrack
 description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit vagy egy projekt nyitott tételeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, egy tételt másik projektnek adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
+metadata:
+  internal: true
 ---
 
 # offtrack

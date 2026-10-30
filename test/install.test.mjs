@@ -51,6 +51,8 @@ test('a skill frontmattere', async () => {
   assert.equal(t.split('\n')[0], '---');
   assert.match(t, /^name: offtrack$/m);
   assert.match(t, /^description: \S/m);
+  // a skills CLI a gyökér almappáit is nézi: e nélkül a magyar megelőzné az angolt
+  assert.match(t, /^metadata:\n  internal: true$/m);
 });
 
 test('a CLAUDE.md-blokk utal a skillre és nem említi Lászlót', async () => {
