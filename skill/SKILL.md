@@ -1,6 +1,6 @@
 ---
 name: offtrack
-description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit vagy egy projekt nyitott tételeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
+description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit vagy egy projekt nyitott tételeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, egy tételt másik projektnek adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
 ---
 
 # offtrack
@@ -49,6 +49,13 @@ Csak a felhasználó kifejezett kérésére:
 - `offtrack transfer <projekt> <email>`: a tulajdonjog átadása egy tagnak; a korábbi tulajdonos tag marad.
 - `offtrack publish <tétel-id>` vagy `offtrack_update {item_id, publish: true}`: a saját ötlet láthatóvá tétele a tagoknak.
 - Kézi teendő másnak: `offtrack_report {kind: "manual", text, assignee: "<email>"}`; a címzettnek tagnak kell lennie.
+
+## Tétel átadása másik projektnek
+
+Ha a teendő másik projekt hatásköre, ne kapcsolatot vegyél fel, hanem add át:
+- `offtrack_report {kind: "branch" | "manual", text, project, from_item_id?}`: a teendő a célprojekt fő szálára kerül. A `thread_id` ilyenkor a forrásszál. A `from_item_id` a saját tételt azonnal lezárja, és a forrásszál megkapja, ha a cél elkészült.
+- Meglévő tétel áthelyezése: `offtrack_update {item_id, project}` vagy `offtrack move <tétel-id> <projekt>`. A `status`-szal nem adható meg együtt.
+- Csak olyan projektbe lehet átadni, amelyet a felhasználó lát; ismeretlen projektre `404` jön, nem jön létre újat. Megálló és ötlet nem adható át.
 
 ## Adminisztráció (csak adminnak)
 

@@ -28,6 +28,7 @@ const HELP_HU = `Használat:
   offtrack unshare <projekt> <email>           tag eltávolítása (tulajdonosként)
   offtrack transfer <projekt> <email>          a tulajdonjog átadása egy tagnak
   offtrack publish <tétel-id>                  saját ötlet publikálása a projekt tagjainak
+  offtrack move <tétel-id> <projekt>           tétel áthelyezése másik projekt fő szálára
   offtrack flush                               a sorban álló jelentések elküldése
   offtrack mobile url | revoke                 a mobil Claude connector titkos URL-je (új URL), illetve visszavonása
   offtrack backfill [--days 60] [--project <név>] [--dry]
@@ -57,6 +58,7 @@ const HELP_EN = `Usage:
   offtrack unshare <project> <email>           remove a member (as owner)
   offtrack transfer <project> <email>          hand ownership to a member
   offtrack publish <item-id>                   publish your own idea to the project members
+  offtrack move <item-id> <project>            move an item to another project's main thread
   offtrack flush                               send queued reports
   offtrack mobile url | revoke                 the secret URL of the mobile Claude connector (new URL), or revoke it
   offtrack backfill [--days 60] [--project <name>] [--dry]
@@ -310,6 +312,9 @@ async function main([cmd, ...args]) {
   }
   if (cmd === 'publish' && args.length === 1 && /^\d+$/.test(args[0])) {
     return call(req(`/api/v1/items/${args[0]}/publish`), (it) => console.log(`${L('Publikálva', 'Published')}: #${it.id}`));
+  }
+  if (cmd === 'move' && args.length === 2 && /^\d+$/.test(args[0])) {
+    return call(req(`/api/v1/items/${args[0]}/move`, { body: { project: args[1] } }), (it) => console.log(`${L('Áthelyezve', 'Moved')}: #${it.id ?? args[0]} → ${args[1]}`));
   }
   if (cmd === 'flush' && args.length === 0) {
     await flushQueue({ timeoutMs: 5000, budgetMs: 10 * 60 * 1000, max: 10000, force: true });

@@ -45,3 +45,10 @@ test('angol az alapértelmezés, a magyar választható', async () => {
   await srv.close();
   assert.match(hu.stderr, /^Használat:/);
 });
+
+test('offtrack move angolul', async () => {
+  const srv = await recorder(() => [200, { id: 5 }]);
+  const r = await run(english(srv.url), ['move', '5', 'futureal']);
+  await srv.close();
+  assert.match(r.stdout, /^Moved: #5 → futureal/);
+});

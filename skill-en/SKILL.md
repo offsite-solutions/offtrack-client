@@ -1,6 +1,6 @@
 ---
 name: offtrack
-description: Operations of the offtrack tracker. Load it when the user asks for their projects or a project's open items, wants to attach a session to a project, merge projects, share or hand over a project, publish an idea, assign a manual task to someone else, pick up an offtrack branch from a prompt pasted from the clipboard, or manage users, tokens or the allowlist, or when called as /offtrack.
+description: Operations of the offtrack tracker. Load it when the user asks for their projects or a project's open items, wants to attach a session to a project, merge projects, share or hand over a project, hand an item off to another project, publish an idea, assign a manual task to someone else, pick up an offtrack branch from a prompt pasted from the clipboard, or manage users, tokens or the allowlist, or when called as /offtrack.
 ---
 
 # offtrack
@@ -49,6 +49,13 @@ Only when the user explicitly asks:
 - `offtrack transfer <project> <email>`: hand ownership to a member; the old owner stays a member.
 - `offtrack publish <item-id>` or `offtrack_update {item_id, publish: true}`: make your own idea visible to the members.
 - A manual task for someone else: `offtrack_report {kind: "manual", text, assignee: "<email>"}`; the assignee must be a member.
+
+## Handing an item off to another project
+
+If a to-do belongs to another project, don't record a link; hand it off:
+- `offtrack_report {kind: "branch" | "manual", text, project, from_item_id?}`: the to-do goes to the target project's main thread. Here `thread_id` is the source thread. `from_item_id` closes your own item at once, and the source thread hears when the target is done.
+- Moving an existing item: `offtrack_update {item_id, project}` or `offtrack move <item-id> <project>`. It cannot be combined with `status`.
+- You can hand off only to a project the user can see; an unknown project gives `404`, nothing is created. Milestones and ideas cannot be handed off.
 
 ## Administration (admins only)
 

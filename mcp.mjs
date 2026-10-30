@@ -70,30 +70,41 @@ server.registerTool('offtrack_items', {
 });
 
 server.registerTool('offtrack_report', {
-  description: L('Jelentés az offtracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt fő szálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri.', 'Report to offtrack. kind: stop = a closed, self-contained step (milestone); branch = a to-do listed at the end of your answer (independent to-dos separately, one coherent list of suggestions as one branch), being stuck, or a question awaiting a decision; manual = something the user must do by hand; idea = an idea about the future, without asking (private until the user publishes it). text: 1–3 sentences, in English. Without thread_id it goes to the project\'s main thread. assignee: only for manual, the email of another project member, if the user asks.'),
+  description: L('Jelentés az offtracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt fő szálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri. project: átadás másik (látható) projektnek, csak branch és manual: a teendő a célprojekt fő szálára kerül, és a thread_id ilyenkor a forrásszál. from_item_id (csak project-tel): a saját tétel, amiből a teendő lett; az átadáskor azonnal lezárul.', 'Report to offtrack. kind: stop = a closed, self-contained step (milestone); branch = a to-do listed at the end of your answer (independent to-dos separately, one coherent list of suggestions as one branch), being stuck, or a question awaiting a decision; manual = something the user must do by hand; idea = an idea about the future, without asking (private until the user publishes it). text: 1–3 sentences, in English. Without thread_id it goes to the project\'s main thread. assignee: only for manual, the email of another project member, if the user asks. project: hand off to another (visible) project, branch and manual only: the to-do goes to the target project\'s main thread, and thread_id is then the source thread. from_item_id (only with project): your own item the to-do came from; it closes at once on hand-off.'),
   inputSchema: {
     kind: z.enum(['stop', 'branch', 'manual', 'idea']),
     text: z.string().min(1).max(2000),
     thread_id: z.number().int().optional(),
     due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     assignee: z.string().email().optional(),
+    project: z.string().min(1).max(200).optional(),
+    from_item_id: z.number().int().optional(),
   },
-}, async ({ assignee, ...args }) => {
+}, async ({ assignee, project, from_item_id, ...args }) => {
+  if (from_item_id && !project) return fail(L('A from_item_id csak project-tel együtt adható meg.', 'from_item_id requires project.'));
   const session_id = currentSession();
   if (!session_id) return noSession();
+  if (project) {
+    // átadás: a thread_id a forrásszál, a tétel a cél projekt fő szálára kerül
+    return write('/api/v1/items/handoff', { session_id, project, ...args, ...(from_item_id ? { from_item_id } : {}), ...(assignee ? { assignee_email: assignee } : {}) }, 'POST',
+      (d) => L(`Átadva: #${d.item.id} (${project}).`, `Handed off: #${d.item.id} (${project}).`));
+  }
   return write('/api/v1/items', { session_id, ...args, ...(assignee ? { assignee_email: assignee } : {}) }, 'POST', (d) => L(`Rögzítve: #${d.id} (${KIND[d.kind] ?? d.kind}) a #${d.thread_id} szálon.`, `Recorded: #${d.id} (${KIND[d.kind] ?? d.kind}) on thread #${d.thread_id}.`));
 });
 
 server.registerTool('offtrack_update', {
-  description: L('Egy tétel állapotának módosítása: done = elvégezve, dropped = elvetve, in_progress = most dolgozol rajta, open = újranyitva. Akkor hívd, ha egy korábbi nyitott ágat elvégeztél vagy elvetettél. publish: true = a saját ötlet publikálása a projekt tagjainak (csak a felhasználó kérésére).', 'Change an item\'s status: done = completed, dropped = dropped, in_progress = you are working on it now, open = reopened. Call it when you have completed or dropped an earlier open branch. publish: true = publish your own idea to the project members (only when the user asks).'),
+  description: L('Egy tétel állapotának módosítása: done = elvégezve, dropped = elvetve, in_progress = most dolgozol rajta, open = újranyitva. Akkor hívd, ha egy korábbi nyitott ágat elvégeztél vagy elvetettél. publish: true = a saját ötlet publikálása a projekt tagjainak (csak a felhasználó kérésére). project = a tétel áthelyezése másik (látható) projekt fő szálára; status-szal és publish-sel nem adható meg együtt.', 'Change an item\'s status: done = completed, dropped = dropped, in_progress = you are working on it now, open = reopened. Call it when you have completed or dropped an earlier open branch. publish: true = publish your own idea to the project members (only when the user asks). project = move the item to the main thread of another (visible) project; cannot be combined with status or publish.'),
   inputSchema: {
     item_id: z.number().int(),
     status: z.enum(['done', 'dropped', 'in_progress', 'open']).optional(),
     publish: z.boolean().optional(),
+    project: z.string().min(1).max(200).optional(),
   },
-}, async ({ item_id, status, publish }) => {
-  if (!status && !publish) return fail('Adj meg status-t vagy publish: true-t.');
+}, async ({ item_id, status, publish, project }) => {
+  if (project && (status || publish)) return fail(L('A project nem adható meg status-szal vagy publish-sel együtt.', 'project cannot be combined with status or publish.'));
+  if (!status && !publish && !project) return fail(L('Adj meg status-t, publish: true-t vagy project-et.', 'Give status, publish: true or project.'));
   const session_id = currentSession();
+  if (project) return write(`/api/v1/items/${item_id}/move`, { project, ...(session_id ? { session_id } : {}) }, 'POST', (d) => L(`Áthelyezve: #${d.id} → ${project}.`, `Moved: #${d.id} → ${project}.`));
   let res;
   if (publish) res = await write(`/api/v1/items/${item_id}/publish`, undefined, 'POST', (d) => `#${d.id}: ${L('publikálva', 'published')}.`);
   if (status && !res?.isError) res = await write(`/api/v1/items/${item_id}`, { status, ...(session_id ? { session_id } : {}) }, 'PATCH', (d) => `#${d.id}: ${d.status}.`);

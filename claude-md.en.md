@@ -8,6 +8,7 @@ Report, but only in these situations (`offtrack_report`):
 - **Manual task** (`kind: manual`): what the user has to do by hand (physical, needs access, depends on a third party, printing, approval).
 - **Idea** (`kind: idea`): when the user refers to the future ("in the future", "later", "might be interesting later", "let's leave this for now") – without asking.
 - **Link** (`offtrack_link`): when you touch another project's code, server or configuration.
+- **Hand-off** (`offtrack_report` with `project`): if a to-do belongs to another project, record it there, not as a link. If it comes from an item of yours, pass `from_item_id`: that item closes at once, and the source thread hears when the target is done.
 - **New thread** (`offtrack_new_thread`): a new, multi-step workflow that does not fit the existing threads. When in doubt, the main thread.
 
 Don't report single commands, file reads or small fixes. The text is 1–3 sentences, in English, focused on the outcome.

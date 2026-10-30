@@ -263,3 +263,17 @@ test('version: a telepített és a legfrissebb verzió', async () => {
   assert.match(r.stdout, /npm install -g github:offsite-solutions\/offtrack-client/);
   assert.equal(srv.requests[0].url, '/api/v1/client/latest');
 });
+
+test('offtrack move', async () => {
+  const srv = await recorder(() => [200, { id: 5 }]);
+  const dir = home(srv.url);
+  const r = await cli(dir, ['move', '5', 'futureal']);
+  const bad = await cli(dir, ['move', 'x', 'futureal']);
+  await srv.close();
+  assert.equal(srv.requests[0].method, 'POST');
+  assert.equal(srv.requests[0].url, '/api/v1/items/5/move');
+  assert.deepEqual(srv.requests[0].body, { project: 'futureal' });
+  assert.equal(r.status, 0);
+  assert.equal(bad.status, 2);
+  assert.equal(srv.requests.length, 1);
+});

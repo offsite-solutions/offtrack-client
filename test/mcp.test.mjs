@@ -143,3 +143,50 @@ test('items megadott projekttel, üres lista', async () => {
   assert.equal(srv.requests[0].url, '/api/v1/projects/green%20go/items');
   assert.ok(text(res[1]).startsWith('Nincs nyitott tétel.'));
 });
+
+test('report project-tel: átadás', async () => {
+  const srv = await recorder(() => [201, { item: { id: 31, kind: 'branch', thread_id: 8 }, source: { id: 4, status: 'done' }, link: { id: 2 } }]);
+  const dir = home(srv.url);
+  withPid(dir, 's-new');
+  const res = await mcp(dir, [call(1, 'offtrack_report', { kind: 'branch', text: 'API-hívás', project: 'futureal', from_item_id: 4 })]);
+  await srv.close();
+  assert.equal(srv.requests[0].method, 'POST');
+  assert.equal(srv.requests[0].url, '/api/v1/items/handoff');
+  assert.equal(srv.requests[0].body.project, 'futureal');
+  assert.equal(srv.requests[0].body.from_item_id, 4);
+  assert.equal(srv.requests[0].body.session_id, 's-new');
+  assert.ok(text(res[1]).startsWith('Átadva: #31 (futureal).'));
+});
+
+test('from_item_id project nélkül: hiba, nincs hívás', async () => {
+  const srv = await recorder(() => [201, {}]);
+  const res = await mcp(home(srv.url), [call(1, 'offtrack_report', { kind: 'branch', text: 'x', from_item_id: 4 })]);
+  await srv.close();
+  assert.equal(res[1].result.isError, true);
+  assert.equal(srv.requests.length, 0);
+});
+
+test('update project-tel: áthelyezés', async () => {
+  const srv = await recorder(() => [200, { id: 5, project: 'futureal' }]);
+  await mcp(home(srv.url), [call(1, 'offtrack_update', { item_id: 5, project: 'futureal' })]);
+  await srv.close();
+  assert.equal(srv.requests[0].method, 'POST');
+  assert.equal(srv.requests[0].url, '/api/v1/items/5/move');
+  assert.equal(srv.requests[0].body.project, 'futureal');
+});
+
+test('update project és status együtt: hiba, nincs hívás', async () => {
+  const srv = await recorder(() => [200, {}]);
+  const res = await mcp(home(srv.url), [call(1, 'offtrack_update', { item_id: 5, project: 'futureal', status: 'done' })]);
+  await srv.close();
+  assert.equal(res[1].result.isError, true);
+  assert.equal(srv.requests.length, 0);
+});
+
+test('offline átadás sorba kerül', async () => {
+  const dir = home();
+  const res = await mcp(dir, [call(1, 'offtrack_report', { kind: 'manual', text: 'x', project: 'futureal' })]);
+  assert.ok(text(res[1]).startsWith(OFFLINE));
+  const q = readFileSync(join(dir, 'queue.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(q[0].path, '/api/v1/items/handoff');
+});
