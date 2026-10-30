@@ -15,7 +15,7 @@ Ha a felhasználó argumentum nélkül hívja (`/offtrack`), sorold fel az elér
 
 - **Projekt:** egy vagy több gyökérkönyvtár; a gyökereket mindenki a saját gépén jelöli ki. Van tulajdonosa, és lehetnek tagjai; alapból privát.
 - **Szál:** a projekten belüli munkafolyam; minden projektnek van fő szála.
-- **Megálló** (`stop`): lezárt lépés. **Nyitott ág** (`branch`): elvarratlan teendő. **Kézi teendő** (`manual`): valakinek kézzel kell elvégeznie. **Ötlet** (`idea`): jövőbeli teendő, privát, amíg a tulajdonosa nem publikálja.
+- **Megálló** (`stop`): lezárt lépés. **Nyitott ág** (`branch`): elvarratlan teendő vagy döntésre váró kérdés. **Kézi teendő** (`manual`): valakinek kézzel kell elvégeznie. **Ötlet** (`idea`): későbbre félretett gondolat, privát, amíg a tulajdonosa nem publikálja.
 - **Álnév:** a beolvasztott projekt régi neve; a célprojektre mutat.
 
 ## Szálválasztás
@@ -23,6 +23,8 @@ Ha a felhasználó argumentum nélkül hívja (`/offtrack`), sorold fel az elér
 Az indulási `[offtrack]` blokk felsorolja a szálakat. Ha a munka illik egybe, a jelentésnél add meg a `thread_id`-t. Ha új, több lépéses munkafolyam kezdődik, `offtrack_new_thread`. Kétség esetén ne nyiss újat: a fő szálra jelents (`thread_id` nélkül). Ha a blokk óta új szál jöhetett létre: `offtrack_threads`.
 
 **Nyitott tételek:** `offtrack_items` (vagy `offtrack list [<projekt>]`): a nyitott ágak, kézi teendők és ötletek szálanként. Projekt nélkül a session projektjéé. Akkor hívd, ha a felhasználó a nyitott tételeket kéri, vagy a blokk óta változhattak.
+
+**Határidő:** ha a felhasználó egy teendőhöz határidőt mond, jelentsd nyitott ágként vagy kézi teendőként `due_date`-tel (`ÉÉÉÉ-HH-NN`). A térképen és a listán „határidő: …” sorral látszik, lejárva pirossal.
 
 ## Egy ág felvétele
 
@@ -37,6 +39,7 @@ A felhasználó a térképről egy promptot másol be, amely egy nyitott ágat �
 - **Lista:** `offtrack_projects` (vagy `offtrack projects`): név, szerep (tulajdonos/tag), a felhasználó gyökerei, tagok. A projektekre mindig a nevükkel hivatkozz.
 - **Csatolás:** ha a felhasználó azt kéri, hogy ezt a sessiont tedd egy projekthez: `offtrack_attach {project}`. A session könyvtára az alkönyvtáraival a projekthez kerül, és a későbbi sessionök is oda jelentenek. Ha a könyvtárhoz automatikusan jött létre projekt, az beolvad a célba. Ha a projekt nem létezik, kérdezd meg, létrehozza-e, és csak igen esetén: `create: true`.
 - **Gyökér:** `offtrack root <projekt> <könyvtár>` (Bash): a könyvtár az alkönyvtáraival a projekthez kerül; ha a projekt nincs, létrejön.
+- **Megjelenített név:** `offtrack rename <projekt> <név>` (Bash), például „legyen a madsac neve MAD/SAC”. Üres névvel törlődik, és újra a könyvtárnév látszik.
 - **Beolvasztás:** `offtrack merge <honnan> <hova>` (Bash). Csak az teheti meg, aki mindkét projekt tulajdonosa. **Nem vonható vissza:** előtte írd le, mi kerül át (szálak, tételek, sessionök, könyvtárak, tagok), és kérj megerősítést.
 
 ## Megosztás, átadás, publikálás, kijelölés
@@ -64,7 +67,7 @@ A Claude appból (mobil, desktop, web) „track …” kéréssel lehet tételt 
 A régi Claude Code beszélgetésekből projektenként javaslatfájl készül (`~/offtrack-backfill/<projekt>.md`). A felhasználó átnézi és szerkeszti, majd felküldi.
 
 1. `offtrack backfill --dry [--days 60] [--project <név>]`: projektenként kiírja, hány session és hány karakter menne az összefoglalásba. Ezt mutasd meg a felhasználónak.
-2. `offtrack backfill [--project <név>]` csak a felhasználó jóváhagyása után futhat: projektenként egy `claude -p` hívás, hosszan futhat, és a Max-keretet használja.
+2. `offtrack backfill [--project <név>]` csak a felhasználó jóváhagyása után futhat: projektenként egy `claude -p` hívás, hosszan futhat, és a felhasználó Claude-előfizetésének keretét használja.
 3. A felhasználó átnézi a fájlokat, majd `offtrack import <fájl…>`. A felküldött fájl `.imported` végződést kap; a szerver a kétszer felküldött tételt kihagyja.
 
 ## Tokenek

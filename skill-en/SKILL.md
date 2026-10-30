@@ -15,7 +15,7 @@ If the user calls it without arguments (`/offtrack`), list the available command
 
 - **Project:** one or more root directories; everyone sets the roots on their own machine. It has an owner and members; private by default.
 - **Thread:** a workflow within the project; every project has a main thread.
-- **Milestone** (`stop`): a closed step. **Open branch** (`branch`): an unfinished to-do. **Manual task** (`manual`): someone has to do it by hand. **Idea** (`idea`): a future to-do, private until its owner publishes it.
+- **Milestone** (`stop`): a closed step. **Open branch** (`branch`): unfinished work or a question awaiting a decision. **Manual task** (`manual`): someone has to do it by hand. **Idea** (`idea`): a thought set aside for later, private until its owner publishes it.
 - **Alias:** the old name of a merged project; it points to the target project.
 
 ## Choosing a thread
@@ -23,6 +23,8 @@ If the user calls it without arguments (`/offtrack`), list the available command
 The `[offtrack]` block at startup lists the threads. If the work fits one, give its `thread_id` when reporting. If a new multi-step workflow starts, use `offtrack_new_thread`. When in doubt, don't open a new one: report to the main thread (without `thread_id`). If a new thread may have appeared since the block: `offtrack_threads`.
 
 **Open items:** `offtrack_items` (or `offtrack list [<project>]`): the open branches, manual tasks and ideas by thread. Without a project, the session's project. Call it when the user asks for the open items, or when they may have changed since the block.
+
+**Deadline:** when the user gives a deadline for a task, report it as an open branch or a manual task with `due_date` (`YYYY-MM-DD`). The map and the list show it in a “due: …” line, in red once overdue.
 
 ## Picking up a branch
 
@@ -37,6 +39,7 @@ The user pastes a prompt copied from the map that describes an open branch (proj
 - **List:** `offtrack_projects` (or `offtrack projects`): name, role (owner/member), the user's roots, members. Always refer to projects by name.
 - **Attach:** if the user asks to put this session into a project: `offtrack_attach {project}`. The session's directory, with its subdirectories, joins the project, and later sessions report there too. If a project was created automatically for the directory, it is merged into the target. If the project does not exist, ask whether to create it, and only if they agree: `create: true`.
 - **Root:** `offtrack root <project> <directory>` (Bash): the directory, with its subdirectories, joins the project; the project is created if missing.
+- **Display name:** `offtrack rename <project> <name>` (Bash), for example “call madsac MAD/SAC”. An empty name clears it, and the directory name shows again.
 - **Merge:** `offtrack merge <from> <into>` (Bash). Only the owner of both projects can do it. **It cannot be undone:** first describe what moves over (threads, items, sessions, directories, members) and ask for confirmation.
 
 ## Sharing, handing over, publishing, assigning
@@ -64,7 +67,7 @@ Items can be added from the Claude app (mobile, desktop, web) with a "track …"
 A proposal file is made per project from old Claude Code conversations (`~/offtrack-backfill/<project>.md`). The user reviews and edits it, then uploads it.
 
 1. `offtrack backfill --dry [--days 60] [--project <name>]`: prints, per project, how many sessions and characters would go into the summary. Show this to the user.
-2. `offtrack backfill [--project <name>]` may run only after the user approves: one `claude -p` call per project; it can take long and uses the Max plan.
+2. `offtrack backfill [--project <name>]` may run only after the user approves: one `claude -p` call per project; it can take long and uses the user's Claude subscription.
 3. The user reviews the files, then `offtrack import <file…>`. An uploaded file gets the `.imported` suffix; the server skips items uploaded twice.
 
 ## Tokens

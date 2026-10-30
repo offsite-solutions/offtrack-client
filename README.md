@@ -14,6 +14,8 @@ offtrack whoami
 
 Requirements: macOS, Claude Code, Node.js 22 or newer, git. Update by running the `npm install -g` command again (`offtrack version` shows whether a newer [release](https://github.com/offsite-solutions/offtrack-client/releases) exists; sessions also mention it at startup); remove with `offtrack uninstall`, then `npm uninstall -g offtrack-client`.
 
+License: MIT.
+
 This repository is a published copy of the `client/` folder of the offtrack project; changes are made there.
 
 ---
