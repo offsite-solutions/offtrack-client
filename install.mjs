@@ -100,7 +100,7 @@ function run(cmd, opts) {
   try { saved = JSON.parse(readFileSync(confFile, 'utf8')); } catch { /* még nincs */ }
   const lang = chooseLang(opts.lang, saved.lang);
   LANG = lang;
-  const skillDir = join(HERE, lang === 'en' ? 'skill-en' : 'skill');
+  const skillDir = join(HERE, ...(lang === 'en' ? ['skills', 'offtrack'] : ['skill']));
   const block = readFileSync(join(HERE, lang === 'en' ? 'claude-md.en.md' : 'claude-md.md'), 'utf8');
 
   if (cmd === 'install') {
@@ -119,6 +119,7 @@ function run(cmd, opts) {
       console.log(`${M('parancs', 'command')}: ${link}`);
     }
     // A skill a tároló könyvtárára mutató link, így a tároló frissítése azonnal érvényes.
+    // Az angol a skills/ alatt van, mert a skills.sh CLI-je ott keresi; a magyar nem kerül a listára.
     const skills = join(homedir(), '.claude', 'skills');
     mkdirSync(skills, { recursive: true });
     const skill = join(skills, 'offtrack');
@@ -135,7 +136,7 @@ function run(cmd, opts) {
     const link = join(homedir(), '.local', 'bin', 'offtrack');
     try { if (readlinkSync(link) === join(HERE, 'bin', 'offtrack.mjs')) unlinkSync(link); } catch { /* nincs */ }
     const skill = join(homedir(), '.claude', 'skills', 'offtrack');
-    try { if (lstatSync(skill).isSymbolicLink() && [join(HERE, 'skill'), join(HERE, 'skill-en')].includes(readlinkSync(skill))) unlinkSync(skill); } catch { /* nincs */ }
+    try { if (lstatSync(skill).isSymbolicLink() && [join(HERE, 'skill'), join(HERE, 'skills', 'offtrack'), join(HERE, 'skill-en')].includes(readlinkSync(skill))) unlinkSync(skill); } catch { /* nincs */ }
   }
 }
 

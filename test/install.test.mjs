@@ -114,7 +114,7 @@ test('install --lang en az angol blokkot írja be', () => {
 
 test('az angol skill ugyanazokat a műveleteket írja le', () => {
   const hu = rf(new URL('../skill/SKILL.md', import.meta.url), 'utf8');
-  const en = rf(new URL('../skill-en/SKILL.md', import.meta.url), 'utf8');
+  const en = rf(new URL('../skills/offtrack/SKILL.md', import.meta.url), 'utf8');
   assert.match(en, /^---\nname: offtrack\n/);
   // a kódként jelölt parancsok és toolok (`offtrack merge …`, `offtrack_update …`) első két szava
   const cmds = (t) => [...new Set([...t.matchAll(/`(offtrack(?:_[a-z_]+|(?: [a-z]+){1,2}))/g)].map((m) => m[1]))].sort();

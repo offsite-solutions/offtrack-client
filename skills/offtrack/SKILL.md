@@ -7,6 +7,18 @@ description: Operations of the offtrack tracker. Load it when the user asks for 
 
 offtrack is the Offsite Solutions tracker: every Claude Code session reports to it, and the user sees on a map where every thread stands. The reporting rules are in the offtrack block of `~/.claude/CLAUDE.md`; this skill covers the less frequent operations.
 
+## Setup
+
+This skill works with the offtrack client, which provides the `offtrack` command, the hooks and the `offtrack_*` tools. If they are missing, ask the user to run these in a terminal (needs macOS, Claude Code, Node.js 22+ and git):
+
+```sh
+npm install -g github:offsite-solutions/offtrack-client
+offtrack install
+offtrack login
+```
+
+They generate the client token at https://offtrack.offsite-solutions.com/install after signing in with a Google, Microsoft, GitHub or GitLab account. The token goes into `offtrack login` in their own terminal, never into the conversation.
+
 ## Called without arguments
 
 If the user calls it without arguments (`/offtrack`), list the available commands. Run `offtrack help 2>&1` (exit code 2 is expected here). Show the output grouped, with a one-line explanation per group: projects, items, sharing, mobile connector, backfill, administration. Add that the common operations ("show the open items", "attach this session to project X") can also be asked for in plain words. Don't run any other command meanwhile.

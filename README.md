@@ -12,6 +12,8 @@ offtrack login        # paste your client token (generate it on the install page
 offtrack whoami
 ```
 
+The skill alone installs with `npx skills add offsite-solutions/offtrack-client`, but it needs the client above; `offtrack install` replaces a linked copy with the client's own.
+
 Requirements: macOS, Claude Code, Node.js 22 or newer, git. Update by running the `npm install -g` command again (`offtrack version` shows whether a newer [release](https://github.com/offsite-solutions/offtrack-client/releases) exists; sessions also mention it at startup); remove with `offtrack uninstall`, then `npm uninstall -g offtrack-client`.
 
 License: MIT.

@@ -7,6 +7,18 @@ description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhaszná
 
 Az offtrack az Offsite Solutions feladatkövetője: minden Claude Code session jelent neki, a felhasználó pedig egy térképen látja, hol tart minden szál. A jelentés szabályai a `~/.claude/CLAUDE.md` offtrack-blokkjában vannak; ez a skill a ritkább műveleteket írja le.
 
+## Előfeltétel
+
+A skill az offtrack klienssel működik: ez adja az `offtrack` parancsot, a hookokat és az `offtrack_*` toolokat. Ha hiányoznak, kérd meg a felhasználót, hogy a terminálban futtassa ezeket (macOS, Claude Code, Node.js 22+ és git kell hozzá):
+
+```sh
+npm install -g github:offsite-solutions/offtrack-client
+offtrack install --lang hu
+offtrack login
+```
+
+A kliens-tokent a https://offtrack.offsite-solutions.com/install oldalon generálja, Google-, Microsoft-, GitHub- vagy GitLab-fiókkal belépve. A token a saját terminálban megy az `offtrack login`-ba, a beszélgetésbe ne kerüljön.
+
 ## Hívás argumentum nélkül
 
 Ha a felhasználó argumentum nélkül hívja (`/offtrack`), sorold fel az elérhető parancsokat. Futtasd: `offtrack help 2>&1` (a 2-es kilépési kód itt rendben van). A kimenetet csoportosítva mutasd meg, csoportonként egy-egy soros magyarázattal: projektek, tételek, megosztás, mobil connector, visszatöltés, adminisztráció. Tedd hozzá, hogy a gyakori műveleteket („mutasd a nyitott tételeket”, „csatold ezt a sessiont a X projekthez”) szóban is kérheti. Ne futtass le közben más parancsot.
