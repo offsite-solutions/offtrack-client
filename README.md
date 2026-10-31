@@ -18,6 +18,12 @@ Requirements: macOS, Claude Code, Node.js 22 or newer, git. Update by running th
 
 License: MIT.
 
+## What the client sends
+
+Sessions send summaries of one to three sentences, never the conversation text. The client also sends the session ID, working directory path, client type, process ID, version and language.
+
+If the working directory is a git repo with an `origin` remote, every session start also sends a salted SHA-256 fingerprint of the remote address and the relative location inside the repo. That is how offtrack recognises the same repo on another machine. The address, username and token never leave your machine. This is automatic and has no separate off switch. There is one salt per server, so the same repo gives the same fingerprint for every user: the server data shows when two users work on the same repo, and anyone with database access can test a guessed address. A fingerprint only matches among your own directories, so it never takes anyone into someone else's project.
+
 This repository is a published copy of the `client/` folder of the offtrack project; changes are made there.
 
 ---
@@ -32,3 +38,9 @@ Az [offtrack](https://offtrack.offsite-solutions.com) Mac-kliense. Az offtrack a
 A telepítés a fenti parancsokkal megy, magyarul `offtrack install --lang hu`-val (a CLAUDE.md-blokk, a parancs, a skill és a szerver üzenetei is magyarok lesznek); a kliens-tokent a telepítési oldalon, belépve generálhatod. Frissítés: ugyanaz az `npm install -g` parancs (az `offtrack version` megmutatja, van-e újabb [release](https://github.com/offsite-solutions/offtrack-client/releases); a sessionök indításkor is szólnak); eltávolítás: `offtrack uninstall`, majd `npm uninstall -g offtrack-client`.
 
 Licenc: MIT.
+
+## Mit küld a kliens
+
+A sessionök egy-három mondatos összefoglalókat küldenek, a beszélgetés szövegét soha. A kliens elküldi a session azonosítóját, a munkakönyvtár útvonalát, a kliens típusát, a folyamat azonosítóját, a verziót és a nyelvet is.
+
+Ha a munkakönyvtár git-repó `origin` remote-tal, minden session indulásakor elmegy a remote címéből számolt sózott SHA-256 lenyomat és a repón belüli relatív hely is. Ebből ismeri fel az offtrack ugyanazt a repót egy másik gépen. A cím, a felhasználónév és a token nem hagyja el a gépet. Ez automatikus, és külön nem kapcsolható ki. A só szerverenként egy, ezért ugyanaz a repó minden felhasználónál ugyanazt a lenyomatot adja: a szerver adataiból látszik, ha két felhasználó ugyanazon a repón dolgozik, és aki hozzáfér az adatbázishoz, egy sejtett címet is ellenőrizni tud. A lenyomat csak a saját könyvtáraid között illeszt, így senkit nem visz be más projektjébe.
