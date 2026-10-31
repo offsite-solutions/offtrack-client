@@ -52,6 +52,7 @@ The user pastes a prompt copied from the map that describes an open branch (proj
 
 - **List:** `offtrack_projects` (or `offtrack projects`): name, role (owner/member), the user's roots, members. Always refer to projects by name.
 - **Attach:** if the user asks to put this session into a project: `offtrack_attach {project}`. The session's directory, with its subdirectories, joins the project, and later sessions report there too. If a project was created automatically for the directory, it is merged into the target. If the project does not exist, ask whether to create it, and only if they agree: `create: true`.
+- **Several machines:** a directory with an unknown path joins the user's existing project through a salted fingerprint of its git remote and the location inside the repo, so a different path needs no attaching. The repo address never reaches the server. A repo with no remote still needs attaching.
 - **Root:** `offtrack root <project> <directory>` (Bash): the directory, with its subdirectories, joins the project; the project is created if missing.
 - **Display name:** `offtrack rename <project> <name>` (Bash), for example “call madsac MAD/SAC”. An empty name clears it, and the directory name shows again.
 - **Merge:** `offtrack merge <from> <into>` (Bash). Only the owner of both projects can do it. **It cannot be undone:** first describe what moves over (threads, items, sessions, directories, members) and ask for confirmation.

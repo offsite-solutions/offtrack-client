@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { spawn, execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdtempSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { recorder, home } from './helpers.mjs';
+import { repoHash } from '../lib/git.mjs';
 
 const HOOK = new URL('../hook.mjs', import.meta.url).pathname;
 const OFFLINE = '[offtrack] A szerver nem érhető el, ez az utolsó ismert állapot; a jelentések helyben sorba kerülnek.';
@@ -130,4 +132,42 @@ test('SessionStart: friss kliensnél nincs frissítési üzenet', async () => {
   const r = await run(dir, ev('SessionStart', { source: 'startup' }));
   await srv.close();
   assert.equal(JSON.parse(r.stdout).systemMessage, undefined);
+});
+
+test('SessionStart csak a lenyomatot küldi: a repó címe nem hagyja el a gépet', async () => {
+  const repo = mkdtempSync(join(tmpdir(), 'ot-hook-'));
+  mkdirSync(join(repo, 'api'));
+  const git = (...a) => execFileSync('git', ['-C', repo, ...a], { stdio: 'ignore' });
+  git('init', '-q');
+  git('remote', 'add', 'origin', 'https://u:ghp_TITOK@github.com/acme/mono.git');
+  const srv = await recorder((req) => [200, req.url === '/api/v1/repo-salt' ? { salt: 'SO' } : { context: 'X' }]);
+  const dir = home(srv.url);
+  await run(dir, ev('SessionStart', { cwd: join(repo, 'api') }));
+  await run(dir, ev('SessionStart', { session_id: 's2', cwd: join(repo, 'api') }));
+  await run(dir, ev('Stop', { cwd: join(repo, 'api') }));
+  await srv.close();
+  const starts = srv.requests.filter((r) => r.body?.event === 'SessionStart');
+  assert.deepEqual(starts[0].body.git, { hash: repoHash('SO', 'github.com/acme/mono'), rel: 'api' });
+  assert.equal(srv.requests.filter((r) => r.url === '/api/v1/repo-salt').length, 1); // a só helyben megmarad
+  assert.ok(!srv.requests.some((r) => /TITOK|acme|github/.test(r.raw)));
+  assert.equal(srv.requests.at(-1).body.git, undefined);
+});
+
+test('ha a só nem érhető el, a session akkor is elindul, lenyomat nélkül', async () => {
+  const repo = mkdtempSync(join(tmpdir(), 'ot-hook-'));
+  execFileSync('git', ['-C', repo, 'init', '-q']);
+  execFileSync('git', ['-C', repo, 'remote', 'add', 'origin', 'https://github.com/acme/mono.git']);
+  const srv = await recorder((req) => (req.url === '/api/v1/repo-salt' ? [404, {}] : [200, { context: 'X' }]));
+  const dir = home(srv.url);
+  await run(dir, ev('SessionStart', { cwd: repo }));
+  await srv.close();
+  assert.ok(!('git' in srv.requests.at(-1).body));
+});
+
+test('git nélküli könyvtárnál a mező kimarad', async () => {
+  const srv = await recorder(() => [200, { context: 'X' }]);
+  const dir = home(srv.url);
+  await run(dir, ev('SessionStart', { cwd: mkdtempSync(join(tmpdir(), 'ot-nogit-')) }));
+  await srv.close();
+  assert.ok(!('git' in srv.requests[0].body));
 });

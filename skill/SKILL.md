@@ -54,6 +54,7 @@ A felhasználó a térképről egy promptot másol be, amely egy nyitott ágat �
 
 - **Lista:** `offtrack_projects` (vagy `offtrack projects`): név, szerep (tulajdonos/tag), a felhasználó gyökerei, tagok. A projektekre mindig a nevükkel hivatkozz.
 - **Csatolás:** ha a felhasználó azt kéri, hogy ezt a sessiont tedd egy projekthez: `offtrack_attach {project}`. A session könyvtára az alkönyvtáraival a projekthez kerül, és a későbbi sessionök is oda jelentenek. Ha a könyvtárhoz automatikusan jött létre projekt, az beolvad a célba. Ha a projekt nem létezik, kérdezd meg, létrehozza-e, és csak igen esetén: `create: true`.
+- **Több gép:** egy könyvtár, amelyet az útvonala alapján nem ismerünk, a git remote sózott lenyomata és a repón belüli hely alapján kerül a felhasználó meglévő projektjébe; más útvonalon sem kell csatolni. A repó címe nem kerül a szerverre. Remote nélküli repónál marad a csatolás.
 - **Gyökér:** `offtrack root <projekt> <könyvtár>` (Bash): a könyvtár az alkönyvtáraival a projekthez kerül; ha a projekt nincs, létrejön.
 - **Megjelenített név:** `offtrack rename <projekt> <név>` (Bash), például „legyen a madsac neve MAD/SAC”. Üres névvel törlődik, és újra a könyvtárnév látszik.
 - **Beolvasztás:** `offtrack merge <honnan> <hova>` (Bash). Csak az teheti meg, aki mindkét projekt tulajdonosa. **Nem vonható vissza:** előtte írd le, mi kerül át (szálak, tételek, sessionök, könyvtárak, tagok), és kérj megerősítést.

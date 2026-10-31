@@ -6,6 +6,7 @@ import { send, enqueue, flushQueue } from './lib/api.mjs';
 import { pidFile, contextFile, L, UPDATE_COMMAND } from './lib/config.mjs';
 import { claudePid } from './lib/proc.mjs';
 import { endsWithList } from './lib/transcript.mjs';
+import { gitReport } from './lib/git.mjs';
 
 const OFFLINE = () => L('[offtrack] A szerver nem érhető el, ez az utolsó ismert állapot; a jelentések helyben sorba kerülnek.', '[offtrack] The server is unreachable; this is the last known state. Reports are queued locally.');
 const EVENTS = new Set(['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Stop', 'SessionEnd']);
@@ -26,6 +27,7 @@ async function main() {
     client: process.env.CLAUDE_CODE_ENTRYPOINT ?? null,
   };
   if (input.source) body.source = input.source;
+  if (event === 'SessionStart') body.git = await gitReport(input.cwd);
   if (event === 'Stop') {
     body.stop_hook_active = input.stop_hook_active === true;
     body.has_open_list = endsWithList(input.transcript_path);
