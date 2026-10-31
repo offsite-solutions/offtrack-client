@@ -38,6 +38,8 @@ Az indulási `[offtrack]` blokk felsorolja a szálakat. Ha a munka illik egybe, 
 
 **Nyitott tételek:** `offtrack_items` (vagy `offtrack list [<projekt>]`): a nyitott ágak, kézi teendők és ötletek szálanként. Projekt nélkül a session projektjéé. Akkor hívd, ha a felhasználó a nyitott tételeket kéri, vagy a blokk óta változhattak.
 
+**Statisztika:** ha a felhasználó a saját számaira kíváncsi (tételek, sessionök, legaktívabb projektek), a felület főmenüjének Statisztikám oldalára küldd: https://offtrack.offsite-solutions.com/stats
+
 **Határidő:** ha a felhasználó egy teendőhöz határidőt mond, jelentsd nyitott ágként vagy kézi teendőként `due_date`-tel (`ÉÉÉÉ-HH-NN`). A térképen és a listán „határidő: …” sorral látszik, lejárva pirossal.
 
 ## Egy ág felvétele

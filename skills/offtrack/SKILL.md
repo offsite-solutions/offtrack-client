@@ -36,6 +36,8 @@ The `[offtrack]` block at startup lists the threads. If the work fits one, give 
 
 **Open items:** `offtrack_items` (or `offtrack list [<project>]`): the open branches, manual tasks and ideas by thread. Without a project, the session's project. Call it when the user asks for the open items, or when they may have changed since the block.
 
+**Stats:** if the user asks about their own numbers (items, sessions, most active projects), point them to the Your stats page in the web app's main menu: https://offtrack.offsite-solutions.com/stats
+
 **Deadline:** when the user gives a deadline for a task, report it as an open branch or a manual task with `due_date` (`YYYY-MM-DD`). The map and the list show it in a “due: …” line, in red once overdue.
 
 ## Picking up a branch
