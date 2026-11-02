@@ -76,6 +76,13 @@ Administration:
 const help = () => L(HELP_HU, HELP_EN);
 
 const enc = encodeURIComponent;
+// -1, 0 vagy 1: a ≤ b. A szerver gyorsítótára régebbi verziót is mondhat, mint a helyi.
+function compareVersions(a, b) {
+  const parts = (v) => String(v).split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const [x, y] = [parts(a), parts(b)];
+  for (let i = 0; i < 3; i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) < (y[i] ?? 0) ? -1 : 1;
+  return 0;
+}
 const req = (path, opts = {}) => send(path, { timeoutMs: 5000, force: true, ...opts });
 const get = (path) => req(path, { method: 'GET' });
 const errorOf = (r) => (r.status ? `${r.data?.error ?? `HTTP ${r.status}`}` : L('a szerver nem érhető el', 'the server is unreachable'));
@@ -236,7 +243,7 @@ async function main([cmd, ...args]) {
     const latest = r.ok ? r.data?.latest : null;
     console.log(`offtrack ${VERSION}`);
     if (!latest) console.log(L('A legfrissebb verzió most nem kérdezhető le.', 'The latest version is not available right now.'));
-    else if (latest === VERSION) console.log(L('Ez a legfrissebb verzió.', 'This is the latest version.'));
+    else if (compareVersions(latest, VERSION) <= 0) console.log(L('Ez a legfrissebb verzió.', 'This is the latest version.'));
     else console.log(L(`Újabb verzió: ${latest}. Frissítés: ${UPDATE_COMMAND}`, `Newer version: ${latest}. Update: ${UPDATE_COMMAND}`));
     return 0;
   }

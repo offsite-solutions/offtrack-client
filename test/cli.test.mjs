@@ -274,6 +274,15 @@ test('version: a telepített és a legfrissebb verzió', async () => {
   assert.equal(srv.requests[0].url, '/api/v1/client/latest');
 });
 
+test('version: a szerver régebbi verziót ismer, nincs frissítési ajánlat', async () => {
+  const srv = await recorder(() => [200, { latest: '0.0.1' }]);
+  const r = await cli(home(srv.url), ['version']);
+  await srv.close();
+  assert.equal(r.status, 0);
+  assert.ok(r.stdout.includes('Ez a legfrissebb verzió.'));
+  assert.ok(!r.stdout.includes('0.0.1'));
+});
+
 test('offtrack move', async () => {
   const srv = await recorder(() => [200, { id: 5 }]);
   const dir = home(srv.url);
