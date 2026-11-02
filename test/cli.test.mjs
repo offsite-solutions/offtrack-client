@@ -122,6 +122,16 @@ test('rename', async () => {
   assert.deepEqual(srv.requests[0].body, { display_name: 'GreenGo' });
 });
 
+test('rename-thread', async () => {
+  const srv = await recorder(() => [200, { id: 49, title: 'LDU NÖP v2' }]);
+  const r = await cli(home(srv.url), ['rename-thread', '49', 'LDU', 'NÖP', 'v2']);
+  await srv.close();
+  assert.equal(r.status, 0);
+  assert.equal(srv.requests[0].method, 'PATCH');
+  assert.equal(srv.requests[0].url, '/api/v1/threads/49');
+  assert.deepEqual(srv.requests[0].body, { title: 'LDU NÖP v2' });
+});
+
 test('projects a megjelenített névvel', async () => {
   const srv = await recorder(() => [200, [{ slug: 'p-1', name: 'greengo', display_name: 'GreenGo', role: 'owner', paths: [], members: [] }]]);
   const r = await cli(home(srv.url), ['projects']);

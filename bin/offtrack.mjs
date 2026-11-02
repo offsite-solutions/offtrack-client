@@ -24,6 +24,7 @@ const HELP_HU = `Használat:
   offtrack merge <honnan> <hova>               egy projekt beolvasztása egy másikba (mindkettő tulajdonosaként)
   offtrack root <projekt> <könyvtár>          gyökérkönyvtár (az alkönyvtárakkal); a projekt létrejön, ha nincs
   offtrack rename <projekt> <megjelenített név> megjelenített név (például GreenGo); üres névvel törlődik
+  offtrack rename-thread <szál-id> <cím>       szál átnevezése (tulajdonosként); a szál-id az offtrack list kimenetében
   offtrack share <projekt> <email>             projekt megosztása (tulajdonosként)
   offtrack unshare <projekt> <email>           tag eltávolítása (tulajdonosként)
   offtrack transfer <projekt> <email>          a tulajdonjog átadása egy tagnak
@@ -54,6 +55,7 @@ const HELP_EN = `Usage:
   offtrack merge <from> <into>                 merge a project into another (as owner of both)
   offtrack root <project> <directory>          root directory (with its subdirectories); creates the project if missing
   offtrack rename <project> <display name>     display name (for example GreenGo); an empty name clears it
+  offtrack rename-thread <thread-id> <title>   rename a thread (as owner); the thread ID is in the output of offtrack list
   offtrack share <project> <email>             share a project (as owner)
   offtrack unshare <project> <email>           remove a member (as owner)
   offtrack transfer <project> <email>          hand ownership to a member
@@ -298,6 +300,10 @@ async function main([cmd, ...args]) {
     const name = args.slice(1).join(' ');
     return call(req(`/api/v1/projects/${enc(args[0])}`, { method: 'PATCH', body: { display_name: name } }),
       (p) => console.log(p.display_name ? `${L('Megjelenített név', 'Display name')}: ${p.display_name}` : `${L('A megjelenített név törölve', 'Display name removed')}: ${p.name}`));
+  }
+  if (cmd === 'rename-thread' && args.length >= 2 && /^\d+$/.test(args[0])) {
+    return call(req(`/api/v1/threads/${args[0]}`, { method: 'PATCH', body: { title: args.slice(1).join(' ') } }),
+      (t) => console.log(`${L('Szál átnevezve', 'Thread renamed')}: #${t.id} ${t.title}`));
   }
   if (cmd === 'share' && args.length === 2) {
     return call(req(`/api/v1/projects/${enc(args[0])}/members`, { body: { email: args[1] } }),

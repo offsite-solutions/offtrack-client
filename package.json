@@ -1,6 +1,6 @@
 {
   "name": "offtrack-client",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Mac client of offtrack: Claude Code hooks, MCP tools and CLI",
   "license": "MIT",
   "repository": {
@@ -17,7 +17,7 @@
     "offtrack": "bin/offtrack.mjs"
   },
   "scripts": {
-    "test": "node --test --test-timeout=15000"
+    "test": "node --test --test-force-exit --test-timeout=15000"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",

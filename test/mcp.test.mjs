@@ -77,7 +77,7 @@ test('4xx hiba', async () => {
 test('tools/list', async () => {
   const res = await mcp(home(), [{ id: 1, method: 'tools/list' }]);
   assert.deepEqual(res[1].result.tools.map((t) => t.name).sort(), [
-    'offtrack_attach', 'offtrack_items', 'offtrack_link', 'offtrack_new_thread', 'offtrack_projects', 'offtrack_report', 'offtrack_threads', 'offtrack_update',
+    'offtrack_attach', 'offtrack_items', 'offtrack_link', 'offtrack_new_thread', 'offtrack_projects', 'offtrack_rename_thread', 'offtrack_report', 'offtrack_threads', 'offtrack_update',
   ]);
 });
 
@@ -189,4 +189,14 @@ test('offline átadás sorba kerül', async () => {
   assert.ok(text(res[1]).startsWith(OFFLINE));
   const q = readFileSync(join(dir, 'queue.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   assert.equal(q[0].path, '/api/v1/items/handoff');
+});
+
+test('szál átnevezése', async () => {
+  const srv = await recorder(() => [200, { id: 49, title: 'LDU NÖP v2' }]);
+  const res = await mcp(home(srv.url), [call(1, 'offtrack_rename_thread', { thread_id: 49, title: 'LDU NÖP v2' })]);
+  await srv.close();
+  assert.equal(srv.requests[0].method, 'PATCH');
+  assert.equal(srv.requests[0].url, '/api/v1/threads/49');
+  assert.deepEqual(srv.requests[0].body, { title: 'LDU NÖP v2' });
+  assert.ok(text(res[1]).startsWith('Szál átnevezve: #49 LDU NÖP v2.'));
 });

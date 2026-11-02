@@ -120,6 +120,11 @@ server.registerTool('offtrack_new_thread', {
   return write('/api/v1/threads', { session_id, title }, 'POST', (d) => `${L('Új szál', 'New thread')}: #${d.id} ${d.title}.`);
 });
 
+server.registerTool('offtrack_rename_thread', {
+  description: L('Egy szál átnevezése (a fő szálé is). Csak a felhasználó kérésére hívd; a projekt tulajdonosa teheti meg.', 'Rename a thread (the main thread too). Call it only when the user asks; only the project owner can do it.'),
+  inputSchema: { thread_id: z.number().int(), title: z.string().min(1).max(200) },
+}, async ({ thread_id, title }) => write(`/api/v1/threads/${thread_id}`, { title }, 'PATCH', (d) => `${L('Szál átnevezve', 'Thread renamed')}: #${d.id} ${d.title}.`));
+
 server.registerTool('offtrack_link', {
   description: L('Kapcsolat egy másik projekttel: akkor hívd, ha más projekt kódját, szerverét vagy konfigurációját érinted.', 'A link to another project: call it when you touch another project\'s code, server or configuration.'),
   inputSchema: { other_project: z.string().min(1).max(200), note: z.string().min(1).max(2000), thread_id: z.number().int().optional() },

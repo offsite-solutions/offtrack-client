@@ -56,7 +56,8 @@ A felhasználó a térképről egy promptot másol be, amely egy nyitott ágat �
 - **Csatolás:** ha a felhasználó azt kéri, hogy ezt a sessiont tedd egy projekthez: `offtrack_attach {project}`. A session könyvtára az alkönyvtáraival a projekthez kerül, és a későbbi sessionök is oda jelentenek. Ha a könyvtárhoz automatikusan jött létre projekt, az beolvad a célba. Ha a projekt nem létezik, kérdezd meg, létrehozza-e, és csak igen esetén: `create: true`.
 - **Több gép:** egy könyvtár, amelyet az útvonala alapján nem ismerünk, a git remote sózott lenyomata és a repón belüli hely alapján kerül a felhasználó meglévő projektjébe; más útvonalon sem kell csatolni. A repó címe nem kerül a szerverre. Remote nélküli repónál marad a csatolás.
 - **Gyökér:** `offtrack root <projekt> <könyvtár>` (Bash): a könyvtár az alkönyvtáraival a projekthez kerül; ha a projekt nincs, létrejön.
-- **Megjelenített név:** `offtrack rename <projekt> <név>` (Bash), például „legyen a madsac neve MAD/SAC”. Üres névvel törlődik, és újra a könyvtárnév látszik.
+- **Megjelenített név:** `offtrack rename <projekt> <név>` (Bash), például „legyen a madsac neve MAD/SAC”. Üres névvel törlődik, és újra a könyvtárnév látszik. A fő szál címe követi, ha eddig a projekt régi nevét viselte.
+- **Szál átnevezése:** `offtrack_rename_thread {thread_id, title}` (vagy `offtrack rename-thread <szál-id> <cím>`), a fő szálé is, csak a felhasználó kérésére. A projekt tulajdonosa teheti meg; a szál azonosítóját az `offtrack_threads` adja.
 - **Beolvasztás:** `offtrack merge <honnan> <hova>` (Bash). Csak az teheti meg, aki mindkét projekt tulajdonosa. **Nem vonható vissza:** előtte írd le, mi kerül át (szálak, tételek, sessionök, könyvtárak, tagok), és kérj megerősítést.
 
 ## Megosztás, átadás, publikálás, kijelölés
