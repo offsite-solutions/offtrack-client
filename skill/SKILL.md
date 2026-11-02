@@ -1,6 +1,6 @@
 ---
 name: offtrack
-description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit vagy egy projekt nyitott tételeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, egy tételt másik projektnek adna át, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
+description: Az offtrack feladatkövető műveletei. Töltsd be, ha a felhasználó a projektjeit vagy egy projekt nyitott tételeit kéri, egy sessiont projekthez csatolna, projekteket olvasztana össze, projektet osztana meg vagy adna át, egy tételt másik projektnek vagy munkatársnak adna át, munkatársakat keresne vagy együttműködést kezelne, ötletet publikálna, kézi teendőt jelölne ki másnak, egy offtrack-ágat venne fel a vágólapra másolt promptból, felhasználókat, tokeneket vagy az engedélylistát kezelné, vagy ha /offtrack-ként hívják.
 metadata:
   internal: true
 ---
@@ -23,7 +23,7 @@ A kliens-tokent a https://offtrack.offsite-solutions.com/install oldalon generá
 
 ## Hívás argumentum nélkül
 
-Ha a felhasználó argumentum nélkül hívja (`/offtrack`), sorold fel az elérhető parancsokat. Futtasd: `offtrack help 2>&1` (a 2-es kilépési kód itt rendben van). A kimenetet csoportosítva mutasd meg, csoportonként egy-egy soros magyarázattal: projektek, tételek, megosztás, mobil connector, visszatöltés, adminisztráció. Tedd hozzá, hogy a gyakori műveleteket („mutasd a nyitott tételeket”, „csatold ezt a sessiont a X projekthez”) szóban is kérheti. Ne futtass le közben más parancsot.
+Ha a felhasználó argumentum nélkül hívja (`/offtrack`), sorold fel az elérhető parancsokat. Futtasd: `offtrack help 2>&1` (a 2-es kilépési kód itt rendben van). A kimenetet csoportosítva mutasd meg, csoportonként egy-egy soros magyarázattal: projektek, tételek, megosztás, munkatársak, mobil connector, visszatöltés, adminisztráció. Tedd hozzá, hogy a gyakori műveleteket („mutasd a nyitott tételeket”, „csatold ezt a sessiont a X projekthez”) szóban is kérheti. Ne futtass le közben más parancsot.
 
 ## Fogalmak
 
@@ -74,6 +74,20 @@ Ha a teendő másik projekt hatásköre, ne kapcsolatot vegyél fel, hanem add �
 - `offtrack_report {kind: "branch" | "manual", text, project, from_item_id?}`: a teendő a célprojekt fő szálára kerül. A `thread_id` ilyenkor a forrásszál. A `from_item_id` a saját tételt azonnal lezárja, és a forrásszál megkapja, ha a cél elkészült.
 - Meglévő tétel áthelyezése: `offtrack_update {item_id, project}` vagy `offtrack move <tétel-id> <projekt>`. A `status`-szal nem adható meg együtt.
 - Csak olyan projektbe lehet átadni, amelyet a felhasználó lát; ismeretlen projektre `404` jön, nem jön létre újat. Megálló és ötlet nem adható át.
+
+## Munkatársak
+
+Munkatárs: becenévvel rendelkező felhasználó, aki ugyanazon a repón dolgozik. Csak a becenevét látod, más adatát nem. Az együttműködés a felhasználó egyik projektje és a munkatárs egyik projektje között jön létre, feladatszinten (csak a közös feladatok látszanak) vagy projektszinten (a másik projekt minden szála és tétele, a privát ötletek kivételével). A munkatárs tételei csak olvashatók. Részletek: https://offtrack.offsite-solutions.com/cowork
+- **Becenév:** `offtrack nick [<becenév>]` (Bash); üres értékkel (`""`) törlődik. Csak a felhasználó kérésére állítsd be: ezzel vállalja, hogy a munkatársai megtalálják.
+- **Ki dolgozik még a repón:** `offtrack_coworkers {path?}` (vagy `offtrack coworkers [<könyvtár>]`). `path` nélkül a session könyvtára; másik repóhoz add meg a könyvtárát.
+- **Átadás munkatársnak:** `offtrack_report {kind: "branch" | "manual", text, to: "<becenév>", from_item_id?, repos?}`. A teendő a munkatárs projektjének fő szálára kerül közös feladatként; a `from_item_id` a saját tételt lezárja, és a forrásszál megkapja, ha a cél elkészült. A `to` a `project`-tel nem adható meg együtt. Csak annak lehet átadni, aki a feladat valamelyik repóján dolgozik, vagy akivel a projekt már együttműködik.
+- **Közös feladat előrehaladása:** ha a felhasználó saját közös feladatát `in_progress`-re állítod, a session további jelentései magától hozzá kapcsolódnak; a projekt más tagjainak sessionje nem kapcsolódik. A munkatárstól kapott tétel mellett `[← Neo: #12]` áll: kitől jött, és a forrástétel azonosítója. Kifejezetten: `offtrack_report {…, parent_item_id}`; `project`-tel és `to`-val nem adható meg.
+- **Megosztás átadás nélkül:** `offtrack share-item <tétel-id> <becenév>` (Bash): a tétel a felhasználónál marad, a munkatárs csak látja.
+- **Együttműködések,** csak a felhasználó kérésére: `offtrack_cowork {action, nickname?, project?}` (vagy `offtrack cowork …`). `list`: együttműködések és függő felkérések. `request`: projektszintű felkérés a felhasználó saját `project`-jével, közös repó nélkül is. `accept` / `decline`: bejövő felkérés; elfogadáskor a `project` kötelező, ha nincs javaslat. `task`: vissza feladatszintre. `end`: megszüntetés; az átadott feladatok a címzettnél maradnak. Ha egy becenévhez több projektpár tartozik, a `project` választ.
+
+## Repócímkék
+
+Minden tétel jelzi, melyik repót érinti. Jelentéskor a `repos` mezőben add meg az érintett repók könyvtárait vagy fájljait, nyitott ágnál azokat is, amelyeket a teendő érinteni fog; főleg ha a session több repóban dolgozik. Ha elhagyod, a kliens a szerkesztett fájlokból számol. A szerverre csak a repó lenyomata és a gyökérkönyvtár neve megy, a címe soha.
 
 ## Adminisztráció (csak adminnak)
 

@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { spawn, execFileSync } from 'node:child_process';
+import { writeFileSync, mkdirSync, readFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, basename } from 'node:path';
 import { recorder, home } from './helpers.mjs';
 
 const MCP = new URL('../mcp.mjs', import.meta.url).pathname;
@@ -11,7 +12,7 @@ const OFFLINE = 'A szerver nem érhető el; a jelentés helyben sorba került, �
 // Elindítja az MCP szervert, elküldi a kéréseket, és visszaadja a válaszokat azonosító szerint.
 function mcp(dir, requests, env = {}) {
   return new Promise((resolve) => {
-    const c = spawn('node', [MCP], { env: { ...process.env, OFFTRACK_HOME: dir, CLAUDE_CODE_SESSION_ID: 's-old', ...env } });
+    const c = spawn('node', [MCP], { cwd: tmpdir(), env: { ...process.env, OFFTRACK_HOME: dir, CLAUDE_CODE_SESSION_ID: 's-old', ...env } });
     const want = new Set(requests.map((r) => r.id));
     const got = {};
     let buf = '';
@@ -77,7 +78,7 @@ test('4xx hiba', async () => {
 test('tools/list', async () => {
   const res = await mcp(home(), [{ id: 1, method: 'tools/list' }]);
   assert.deepEqual(res[1].result.tools.map((t) => t.name).sort(), [
-    'offtrack_attach', 'offtrack_items', 'offtrack_link', 'offtrack_new_thread', 'offtrack_projects', 'offtrack_rename_thread', 'offtrack_report', 'offtrack_threads', 'offtrack_update',
+    'offtrack_attach', 'offtrack_cowork', 'offtrack_coworkers', 'offtrack_items', 'offtrack_link', 'offtrack_new_thread', 'offtrack_projects', 'offtrack_rename_thread', 'offtrack_report', 'offtrack_threads', 'offtrack_update',
   ]);
 });
 
@@ -130,7 +131,7 @@ test('items a session projektjével', async () => {
     ? [200, { session_id: 's1', project: { slug: 'offtrack', name: 'offtrack' } }] : [200, ITEMS]));
   const res = await mcp(home(srv.url), [call(1, 'offtrack_items', {})]);
   await srv.close();
-  assert.equal(srv.requests[1].url, '/api/v1/projects/offtrack/items');
+  assert.equal(srv.requests[1].url, '/api/v1/projects/offtrack/items?cowork=1');
   const out = text(res[1]);
   assert.ok(out.startsWith('#1 offtrack\n  #7 iOS app [ötlet]\n  #9 nyomtatás [kézi: Péter] [folyamatban] [határidő: 2026-11-01]'));
 });
@@ -140,7 +141,7 @@ test('items megadott projekttel, üres lista', async () => {
   const res = await mcp(home(srv.url), [call(1, 'offtrack_items', { project: 'green go' })]);
   await srv.close();
   assert.equal(srv.requests.length, 1);
-  assert.equal(srv.requests[0].url, '/api/v1/projects/green%20go/items');
+  assert.equal(srv.requests[0].url, '/api/v1/projects/green%20go/items?cowork=1');
   assert.ok(text(res[1]).startsWith('Nincs nyitott tétel.'));
 });
 
@@ -156,6 +157,38 @@ test('report project-tel: átadás', async () => {
   assert.equal(srv.requests[0].body.from_item_id, 4);
   assert.equal(srv.requests[0].body.session_id, 's-new');
   assert.ok(text(res[1]).startsWith('Átadva: #31 (futureal).'));
+});
+
+test('report to-val: a handoff végpontra megy', async () => {
+  const srv = await recorder(() => [201, { item: { id: 32, kind: 'branch', text: 'API', status: 'open' }, cowork: { id: 1, level: 'task', nickname: 'Peti' } }]);
+  const dir = home(srv.url);
+  withPid(dir, 's-new');
+  const res = await mcp(dir, [call(1, 'offtrack_report', { kind: 'branch', text: 'API', to: 'Peti', from_item_id: 4 })]);
+  await srv.close();
+  assert.equal(srv.requests[0].url, '/api/v1/items/handoff');
+  assert.equal(srv.requests[0].body.to, 'Peti');
+  assert.equal(srv.requests[0].body.project, undefined);
+  assert.equal(srv.requests[0].body.from_item_id, 4);
+  assert.ok(text(res[1]).startsWith('Átadva: #32 → Peti.'));
+});
+
+test('report parent_item_id-vel', async () => {
+  const srv = await recorder(() => [201, { id: 40, kind: 'stop', thread_id: 8, parent_item_id: 32 }]);
+  const dir = home(srv.url);
+  withPid(dir, 's-new');
+  const res = await mcp(dir, [call(1, 'offtrack_report', { kind: 'stop', text: 'kész', parent_item_id: 32 })]);
+  await srv.close();
+  assert.equal(srv.requests[0].url, '/api/v1/items');
+  assert.equal(srv.requests[0].body.parent_item_id, 32);
+  assert.ok(text(res[1]).startsWith('Rögzítve: #40'));
+});
+
+test('to és project együtt: hiba, nincs hívás', async () => {
+  const srv = await recorder(() => [201, {}]);
+  const res = await mcp(home(srv.url), [call(1, 'offtrack_report', { kind: 'branch', text: 'x', to: 'Peti', project: 'futureal' })]);
+  await srv.close();
+  assert.equal(res[1].result.isError, true);
+  assert.equal(srv.requests.length, 0);
 });
 
 test('from_item_id project nélkül: hiba, nincs hívás', async () => {
@@ -199,4 +232,98 @@ test('szál átnevezése', async () => {
   assert.equal(srv.requests[0].url, '/api/v1/threads/49');
   assert.deepEqual(srv.requests[0].body, { title: 'LDU NÖP v2' });
   assert.ok(text(res[1]).startsWith('Szál átnevezve: #49 LDU NÖP v2.'));
+});
+
+// Ideiglenes repó origin-nel, a sóval előre beállítva.
+function repoDir(dir) {
+  const repo = mkdtempSync(join(tmpdir(), 'ot-repo-'));
+  for (const a of [['init', '-q'], ['remote', 'add', 'origin', 'git@github.com:acme/secret-repo.git']]) execFileSync('git', ['-C', repo, ...a]);
+  mkdirSync(join(repo, 'src'));
+  writeFileSync(join(repo, 'src/a.js'), '');
+  writeFileSync(join(dir, 'repo-salt'), 'SO');
+  return repo;
+}
+
+test('report repos-szal: a lenyomatok mennek, a cím nem', async () => {
+  const srv = await recorder(() => [201, { id: 1, kind: 'stop', thread_id: 1 }]);
+  const dir = home(srv.url);
+  const repo = repoDir(dir);
+  await mcp(dir, [call(1, 'offtrack_report', { kind: 'stop', text: 'kész', repos: [join(repo, 'src/a.js')] })]);
+  await srv.close();
+  const body = srv.requests[0].body;
+  assert.match(body.repos[0].hash, /^[0-9a-f]{64}$/);
+  assert.equal(body.repos[0].label, basename(repo));
+  assert.equal(JSON.stringify(body).includes('github.com'), false);
+});
+
+test('report repos nélkül: a szerkesztett fájlok repói', async () => {
+  const srv = await recorder(() => [201, { id: 1, kind: 'stop', thread_id: 1 }]);
+  const dir = home(srv.url);
+  const repo = repoDir(dir);
+  withPid(dir, 's-new');
+  mkdirSync(join(dir, 'edited'));
+  writeFileSync(join(dir, 'edited', 's-new'), `${join(repo, 'src/a.js')}\n`);
+  await mcp(dir, [call(1, 'offtrack_report', { kind: 'stop', text: 'kész' })]);
+  await srv.close();
+  assert.equal(srv.requests[0].body.repos[0].label, basename(repo));
+  assert.equal(existsSync(join(dir, 'edited', 's-new')), false);
+});
+
+test('coworkers: a lenyomattal kérdez, soronként egy becenév', async () => {
+  const srv = await recorder(() => [200, [{ nickname: 'Anna', level: 'project' }, { nickname: 'Peti', level: null }]]);
+  const dir = home(srv.url);
+  const repo = repoDir(dir);
+  const res = await mcp(dir, [call(1, 'offtrack_coworkers', { path: repo })]);
+  await srv.close();
+  assert.match(srv.requests[0].url, /^\/api\/v1\/coworkers\?hash=[0-9a-f]{64}$/);
+  assert.equal(JSON.stringify(srv.requests).includes('github.com'), false);
+  assert.equal(text(res[1]), 'Anna (project)\nPeti');
+});
+
+test('coworkers: repó nélküli könyvtárnál hiba, kérés nélkül', async () => {
+  const srv = await recorder(() => [200, []]);
+  const res = await mcp(home(srv.url), [call(1, 'offtrack_coworkers', { path: tmpdir() })]);
+  await srv.close();
+  assert.equal(res[1].result.isError, true);
+  assert.equal(srv.requests.length, 0);
+});
+
+const COWORKS = {
+  coworks: [{ id: 7, nickname: 'Trinity', level: 'project', project: 'matrix' }, { id: 8, nickname: 'Trinity', level: 'task', project: 'zion' }],
+  incoming: [{ id: 21, nickname: 'Neo', level: 'project', project: 'matrix' }],
+  outgoing: [],
+};
+
+test('cowork: a leírás szerint csak a felhasználó kérésére', async () => {
+  const res = await mcp(home(), [{ id: 1, method: 'tools/list' }]);
+  const tool = res[1].result.tools.find((t) => t.name === 'offtrack_cowork');
+  assert.match(tool.description, /Csak a felhasználó kérésére/);
+});
+
+test('cowork műveletek: URL-ek és törzsek', async () => {
+  const srv = await recorder((req) => (req.method === 'GET' ? [200, COWORKS] : [200, { id: 7, nickname: 'Trinity', level: 'task', project: 'matrix' }]));
+  const dir = home(srv.url);
+  const res = await mcp(dir, [
+    call(1, 'offtrack_cowork', { action: 'list' }),
+    call(2, 'offtrack_cowork', { action: 'request', nickname: 'Neo', project: 'matrix' }),
+    call(3, 'offtrack_cowork', { action: 'task', nickname: 'Trinity', project: 'matrix' }),
+  ]);
+  const res2 = await mcp(dir, [call(4, 'offtrack_cowork', { action: 'end', nickname: 'Trinity' })]);
+  const res3 = await mcp(dir, [call(5, 'offtrack_cowork', { action: 'accept', nickname: 'Neo' }), call(6, 'offtrack_cowork', { action: 'decline', nickname: 'Neo' })]);
+  await srv.close();
+  assert.ok(text(res[1]).includes('Trinity'));
+  const writes = srv.requests.filter((r) => r.method !== 'GET').map((r) => [r.method, r.url, r.body]);
+  assert.deepEqual(writes.slice(0, 2), [
+    ['POST', '/api/v1/coworks/requests', { nickname: 'Neo', project: 'matrix' }],
+    ['PATCH', '/api/v1/coworks/7', { level: 'task' }],
+  ]);
+  // több pár project nélkül: hiba, írás nélkül
+  assert.equal(res2[4].result.isError, true);
+  assert.ok(text(res2[4]).includes('zion'));
+  assert.deepEqual(writes.slice(2).map(([m, u]) => [m, u]).sort(), [
+    ['POST', '/api/v1/coworks/requests/21/accept'], ['POST', '/api/v1/coworks/requests/21/decline'],
+  ]);
+  // request project nélkül: hiba
+  const r4 = await mcp(home(), [call(7, 'offtrack_cowork', { action: 'request', nickname: 'Neo' })]);
+  assert.equal(r4[7].result.isError, true);
 });

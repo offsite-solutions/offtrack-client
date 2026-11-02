@@ -171,3 +171,26 @@ test('git nélküli könyvtárnál a mező kimarad', async () => {
   await srv.close();
   assert.ok(!('git' in srv.requests[0].body));
 });
+
+test('PostToolUse: a szerkesztett fájl bekerül az edited listába', async () => {
+  const srv = await recorder();
+  const dir = home(srv.url);
+  await run(dir, ev('PostToolUse', { tool_name: 'Read', tool_input: { file_path: '/x/r.js' } }));
+  assert.equal(existsSync(join(dir, 'edited', 's1')), false);
+  const r = await run(dir, ev('PostToolUse', { tool_name: 'Edit', tool_input: { file_path: '/x/a.js' } }));
+  await srv.close();
+  assert.equal(r.status, 0);
+  assert.equal(readFileSync(join(dir, 'edited', 's1'), 'utf8'), '/x/a.js\n');
+  assert.equal(JSON.stringify(srv.requests[0].body).includes('/x/a.js'), false);
+});
+
+test('SessionEnd: a session szerkesztett fájljainak listája törlődik', async () => {
+  const srv = await recorder();
+  const dir = home(srv.url);
+  await run(dir, ev('PostToolUse', { tool_name: 'Edit', tool_input: { file_path: '/x/a.js' } }));
+  assert.equal(existsSync(join(dir, 'edited', 's1')), true);
+  const r = await run(dir, ev('SessionEnd'));
+  await srv.close();
+  assert.equal(r.status, 0);
+  assert.equal(existsSync(join(dir, 'edited', 's1')), false);
+});

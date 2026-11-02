@@ -1,6 +1,6 @@
 ---
 name: offtrack
-description: Operations of the offtrack tracker. Load it when the user asks for their projects or a project's open items, wants to attach a session to a project, merge projects, share or hand over a project, hand an item off to another project, publish an idea, assign a manual task to someone else, pick up an offtrack branch from a prompt pasted from the clipboard, or manage users, tokens or the allowlist, or when called as /offtrack.
+description: Operations of the offtrack tracker. Load it when the user asks for their projects or a project's open items, wants to attach a session to a project, merge projects, share or hand over a project, hand an item off to another project or a coworker, look up coworkers or manage coworks, publish an idea, assign a manual task to someone else, pick up an offtrack branch from a prompt pasted from the clipboard, or manage users, tokens or the allowlist, or when called as /offtrack.
 ---
 
 # offtrack
@@ -21,7 +21,7 @@ They generate the client token at https://offtrack.offsite-solutions.com/install
 
 ## Called without arguments
 
-If the user calls it without arguments (`/offtrack`), list the available commands. Run `offtrack help 2>&1` (exit code 2 is expected here). Show the output grouped, with a one-line explanation per group: projects, items, sharing, mobile connector, backfill, administration. Add that the common operations ("show the open items", "attach this session to project X") can also be asked for in plain words. Don't run any other command meanwhile.
+If the user calls it without arguments (`/offtrack`), list the available commands. Run `offtrack help 2>&1` (exit code 2 is expected here). Show the output grouped, with a one-line explanation per group: projects, items, sharing, coworkers, mobile connector, backfill, administration. Add that the common operations ("show the open items", "attach this session to project X") can also be asked for in plain words. Don't run any other command meanwhile.
 
 ## Concepts
 
@@ -72,6 +72,20 @@ If a to-do belongs to another project, don't record a link; hand it off:
 - `offtrack_report {kind: "branch" | "manual", text, project, from_item_id?}`: the to-do goes to the target project's main thread. Here `thread_id` is the source thread. `from_item_id` closes your own item at once, and the source thread hears when the target is done.
 - Moving an existing item: `offtrack_update {item_id, project}` or `offtrack move <item-id> <project>`. It cannot be combined with `status`.
 - You can hand off only to a project the user can see; an unknown project gives `404`, nothing is created. Milestones and ideas cannot be handed off.
+
+## Coworkers
+
+A coworker is a user with a nickname who works on the same repo. You see their nickname and nothing else. A cowork links one of the user's projects with one of the coworker's, at task level (only shared tasks are visible) or project level (every thread and item of the other project, except private ideas). A coworker's items are read-only. Details: https://offtrack.offsite-solutions.com/cowork
+- **Nickname:** `offtrack nick [<nickname>]` (Bash); an empty value (`""`) clears it. Set it only when the user asks: it means they agree to be found by coworkers.
+- **Who else works on the repo:** `offtrack_coworkers {path?}` (or `offtrack coworkers [<directory>]`). Without `path`, the session's directory; for another repo, give its directory.
+- **Hand off to a coworker:** `offtrack_report {kind: "branch" | "manual", text, to: "<nickname>", from_item_id?, repos?}`. The to-do goes to the main thread of the coworker's project as a shared task; `from_item_id` closes your own item, and the source thread hears when the target is done. `to` cannot be combined with `project`. You can hand off only to someone who works on one of the task's repos, or whom the project already coworks with.
+- **Progress on a shared task:** once you set the user's own shared task to `in_progress`, the session's further reports link to it on their own; sessions of the project's other members don't link. An item received from a coworker carries `[← Neo: #12]`: who sent it, and the source item's id. Explicitly: `offtrack_report {…, parent_item_id}`; it cannot be combined with `project` or `to`.
+- **Share without handing off:** `offtrack share-item <item-id> <nickname>` (Bash): the item stays with the user; the coworker can only see it.
+- **Coworks,** only when the user asks: `offtrack_cowork {action, nickname?, project?}` (or `offtrack cowork …`). `list`: coworks and pending requests. `request`: ask for project level with the user's own `project`, no common repo needed. `accept` / `decline`: an incoming request; accepting needs `project` when none is suggested. `task`: back to task level. `end`: end the cowork; handed-off tasks stay with the recipient. When a nickname has several project pairs, `project` picks one.
+
+## Repo labels
+
+Every item records which repo it concerns. When reporting, list the directories or files of the repos it concerns in `repos`, for an open branch also the repos the to-do will touch; this matters most when the session works in several repos. If you leave it out, the client works it out from the edited files. Only the repo's fingerprint and root directory name reach the server, never its address.
 
 ## Administration (admins only)
 

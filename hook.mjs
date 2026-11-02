@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // offtrack hook: minden Claude Code hook-eseményt a szervernek küld.
 // Mindig 0-val lép ki, és soha nem blokkol, ha a szerver nem érhető el.
-import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, unlinkSync, appendFileSync } from 'node:fs';
 import { send, enqueue, flushQueue } from './lib/api.mjs';
-import { pidFile, contextFile, L, UPDATE_COMMAND } from './lib/config.mjs';
+import { pidFile, contextFile, editedFile, L, UPDATE_COMMAND } from './lib/config.mjs';
 import { claudePid } from './lib/proc.mjs';
 import { endsWithList } from './lib/transcript.mjs';
 import { gitReport } from './lib/git.mjs';
 
 const OFFLINE = () => L('[offtrack] A szerver nem érhető el, ez az utolsó ismert állapot; a jelentések helyben sorba kerülnek.', '[offtrack] The server is unreachable; this is the last known state. Reports are queued locally.');
+const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const EVENTS = new Set(['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Stop', 'SessionEnd']);
 
 function readText(file) {
@@ -32,10 +33,19 @@ async function main() {
     body.stop_hook_active = input.stop_hook_active === true;
     body.has_open_list = endsWithList(input.transcript_path);
   }
+  if (event === 'PostToolUse' && EDIT_TOOLS.has(input.tool_name)) {
+    try {
+      const file = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
+      if (typeof file === 'string' && file) appendFileSync(editedFile(input.session_id), `${file}\n`, { mode: 0o600 });
+    } catch { /* a hook nem hibázhat */ }
+  }
   for (const k of Object.keys(body)) if (body[k] === null) delete body[k];
 
   if (event === 'SessionStart') writeFileSync(pidFile(pid), input.session_id, { mode: 0o600 });
   if (event === 'SessionEnd' && readText(pidFile(pid)) === input.session_id) unlinkSync(pidFile(pid));
+  if (event === 'SessionEnd') {
+    try { unlinkSync(editedFile(input.session_id)); } catch { /* nem volt szerkesztés */ }
+  }
 
   // A sorban állók előbb mennek; ha a sor nem ürült ki, az új esemény is a sorba kerül, hogy a sorrend megmaradjon.
   const drained = await flushQueue({ timeoutMs: 1500, budgetMs: 1000 });

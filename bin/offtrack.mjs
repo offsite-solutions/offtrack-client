@@ -2,12 +2,14 @@
 // offtrack parancssor.
 import { writeFileSync, chmodSync, readFileSync, renameSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { send, flushQueue, queueLength } from '../lib/api.mjs';
 import { home, L, lang, VERSION, UPDATE_COMMAND } from '../lib/config.mjs';
 import { currentSession } from '../lib/session.mjs';
 import { claudePid } from '../lib/proc.mjs';
 import { formatItems } from '../lib/items.mjs';
+import { reposFor } from '../lib/git.mjs';
+import { formatCoworkers, formatCoworks, NO_REPO, pickCowork, pickRequest, same } from '../lib/cowork.mjs';
 import { listSessions, condense, groupByProject } from '../lib/backfill/sessions.mjs';
 import { summarize } from '../lib/backfill/summarize.mjs';
 import { writeProposal, parseProposal, slug } from '../lib/backfill/proposal.mjs';
@@ -30,7 +32,20 @@ const HELP_HU = `Használat:
   offtrack transfer <projekt> <email>          a tulajdonjog átadása egy tagnak
   offtrack publish <tétel-id>                  saját ötlet publikálása a projekt tagjainak
   offtrack move <tétel-id> <projekt>           tétel áthelyezése másik projekt fő szálára
+  offtrack share-item <tétel-id> <becenév>     saját tétel megosztása munkatárssal átadás nélkül (ő csak látja)
   offtrack flush                               a sorban álló jelentések elküldése
+  offtrack nick [<becenév>]                    a becenév kiírása, beállítása ("" törli)
+  offtrack coworkers [<könyvtár>]              kik dolgoznak még ezen a repón (becenevek; alapból a jelenlegi könyvtár)
+  offtrack cowork list                         együttműködéseim (munkatárs, saját projekt, szint) és a függő felkérések
+  offtrack cowork <becenév> project --project <saját projekt>
+                                               projektszintű felkérés (közös repó nélkül is); a munkatársnak el kell fogadnia
+  offtrack cowork <becenév> task [--project <saját projekt>]
+                                               vissza feladatszintre (egyoldalúan, azonnal)
+  offtrack cowork <becenév> end [--project <saját projekt>]
+                                               az együttműködés megszüntetése; az átadott feladatok a címzettnél maradnak
+  offtrack cowork accept <becenév> [--project <saját projekt>]
+                                               felkérés elfogadása (a --project kötelező, ha nincs javasolt projekt)
+  offtrack cowork decline <becenév>            felkérés elutasítása
   offtrack mobile url | revoke                 a mobil Claude connector titkos URL-je (új URL), illetve visszavonása
   offtrack backfill [--days 60] [--project <név>] [--dry]
                                                javaslatfájlok a régi sessionökből (~/offtrack-backfill/)
@@ -61,7 +76,20 @@ const HELP_EN = `Usage:
   offtrack transfer <project> <email>          hand ownership to a member
   offtrack publish <item-id>                   publish your own idea to the project members
   offtrack move <item-id> <project>            move an item to another project's main thread
+  offtrack share-item <item-id> <nickname>     share your own item with a coworker without handing it off (read-only for them)
   offtrack flush                               send queued reports
+  offtrack nick [<nickname>]                   show or set your nickname ("" clears it)
+  offtrack coworkers [<directory>]             who else works on this repo (nicknames; default: the current directory)
+  offtrack cowork list                         my coworks (coworker, own project, level) and pending requests
+  offtrack cowork <nickname> project --project <own project>
+                                               request project level (no common repo needed); the coworker must accept
+  offtrack cowork <nickname> task [--project <own project>]
+                                               back to task level (one-sided, immediate)
+  offtrack cowork <nickname> end [--project <own project>]
+                                               end the cowork; handed-off tasks stay with the recipient
+  offtrack cowork accept <nickname> [--project <own project>]
+                                               accept a request (--project is required when no project is suggested)
+  offtrack cowork decline <nickname>           decline a request
   offtrack mobile url | revoke                 the secret URL of the mobile Claude connector (new URL), or revoke it
   offtrack backfill [--days 60] [--project <name>] [--dry]
                                                proposal files from past sessions (~/offtrack-backfill/)
@@ -236,6 +264,61 @@ async function importFiles(files) {
   return code;
 }
 
+// offtrack cowork …: a becenévhez tartozó együttműködés vagy felkérés a GET /coworks listájából.
+async function cowork(args) {
+  const opt = [];
+  let project = null;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--project' && args[i + 1]) project = args[++i];
+    else opt.push(args[i]);
+  }
+  const [a, b] = opt;
+  if (opt.length === 1 && a === 'list' && !project) return call(get('/api/v1/coworks'), (d) => console.log(formatCoworks(d)));
+  const list = async () => {
+    const r = await get('/api/v1/coworks');
+    if (!r.ok) throw new Error(errorOf(r));
+    return r.data;
+  };
+  try {
+    if (opt.length === 2 && a === 'accept') {
+      const { found, error } = pickRequest((await list()).incoming, b, project);
+      if (error) return fail(error);
+      return call(req(`/api/v1/coworks/requests/${found.id}/accept`, { body: project ? { project } : {} }),
+        (c) => console.log(L(`Elfogadva: ${c.nickname}, projektszint (saját projekt: ${c.project}).`, `Accepted: ${c.nickname}, project level (own project: ${c.project}).`)));
+    }
+    if (opt.length === 2 && a === 'decline' && !project) {
+      const incoming = (await list()).incoming.filter((r) => same(r.nickname, b));
+      if (!incoming.length) return fail(L(`Nincs függő felkérésed tőle: ${b}`, `No pending request from: ${b}`));
+      for (const r of incoming) {
+        const d = await req(`/api/v1/coworks/requests/${r.id}/decline`, { body: {} });
+        if (!d.ok) return fail(errorOf(d));
+      }
+      console.log(`${L('Elutasítva', 'Declined')}: ${b}`);
+      return 0;
+    }
+    if (opt.length === 2 && b === 'project') {
+      if (!project) return fail(L('Add meg a saját projektedet: --project <projekt>.', 'Give your own project: --project <project>.'));
+      return call(req('/api/v1/coworks/requests', { body: { nickname: a, project } }),
+        (r) => console.log(L(`Felkérés elküldve: ${r.nickname} (saját projekt: ${r.project}). Ha elfogadja, projektszintű lesz az együttműködés.`,
+          `Request sent: ${r.nickname} (own project: ${r.project}). Once accepted, the cowork is at project level.`)));
+    }
+    if (opt.length === 2 && (b === 'task' || b === 'end')) {
+      const { found, error } = pickCowork((await list()).coworks, a, project);
+      if (error) return fail(error);
+      if (b === 'task') {
+        return call(req(`/api/v1/coworks/${found.id}`, { method: 'PATCH', body: { level: 'task' } }),
+          (c) => console.log(L(`Feladatszint: ${c.nickname} (saját projekt: ${c.project}).`, `Task level: ${c.nickname} (own project: ${c.project}).`)));
+      }
+      return call(req(`/api/v1/coworks/${found.id}`, { method: 'DELETE' }),
+        () => console.log(L(`Megszüntetve: ${found.nickname} (saját projekt: ${found.project}).`, `Ended: ${found.nickname} (own project: ${found.project}).`)));
+    }
+  } catch (e) {
+    return fail(e.message);
+  }
+  console.error(help());
+  return 2;
+}
+
 async function main([cmd, ...args]) {
   if (cmd === 'install' || cmd === 'uninstall') return (await import('../install.mjs')).main([cmd, ...args]);
   if (cmd === 'version' && args.length === 0) {
@@ -281,7 +364,7 @@ async function main([cmd, ...args]) {
       if (!s.ok) return fail(errorOf(s));
       slug = s.data.project.slug;
     }
-    return call(get(`/api/v1/projects/${enc(slug)}/items`), (d) => console.log(formatItems(d)));
+    return call(get(`/api/v1/projects/${enc(slug)}/items?cowork=1`), (d) => console.log(formatItems(d)));
   }
   if (cmd === 'merge' && args.length === 2) {
     const [from, into] = args;
@@ -329,11 +412,24 @@ async function main([cmd, ...args]) {
   if (cmd === 'move' && args.length === 2 && /^\d+$/.test(args[0])) {
     return call(req(`/api/v1/items/${args[0]}/move`, { body: { project: args[1] } }), (it) => console.log(`${L('Áthelyezve', 'Moved')}: #${it.id ?? args[0]} → ${args[1]}`));
   }
+  if (cmd === 'share-item' && args.length === 2 && /^\d+$/.test(args[0])) {
+    return call(req(`/api/v1/items/${args[0]}/share`, { body: { nickname: args[1] } }), (r) => console.log(`${L('Megosztva', 'Shared')}: #${r.item_id} → ${args[1]}`));
+  }
   if (cmd === 'flush' && args.length === 0) {
     await flushQueue({ timeoutMs: 5000, budgetMs: 10 * 60 * 1000, max: 10000, force: true });
     console.log(`${L('A sorban maradt', 'Left in the queue')}: ${queueLength()}`);
     return 0;
   }
+  if (cmd === 'nick' && args.length <= 1) {
+    const show = ({ nickname }) => console.log(nickname ?? L('(nincs becenév)', '(no nickname)'));
+    return call(args.length ? req('/api/v1/me/nickname', { method: 'PUT', body: { nickname: args[0] } }) : get('/api/v1/me'), show);
+  }
+  if (cmd === 'coworkers' && args.length <= 1) {
+    const [repo] = await reposFor([resolve(args[0] ?? process.cwd())]);
+    if (!repo) return fail(NO_REPO);
+    return call(get(`/api/v1/coworkers?hash=${repo.hash}`), (list) => console.log(formatCoworkers(list)));
+  }
+  if (cmd === 'cowork') return cowork(args);
   if (cmd === 'mobile' && args.length === 1 && args[0] === 'url') {
     return call(req('/api/v1/me/mobile', { body: {} }), ({ url }) => console.log(L(`A mobil connector URL-je (jelszóként kezeld, ne oszd meg):
 

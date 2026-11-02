@@ -7,6 +7,8 @@ import { send, enqueue, flushQueue } from './lib/api.mjs';
 import { currentSession } from './lib/session.mjs';
 import { L, VERSION } from './lib/config.mjs';
 import { formatItems } from './lib/items.mjs';
+import { formatCoworkers, formatCoworks, NO_REPO, pickCowork, pickRequest } from './lib/cowork.mjs';
+import { reposFor, takeEdited } from './lib/git.mjs';
 
 const OFFLINE = L('A szerver nem érhető el; a jelentés helyben sorba került, és később továbbítódik.', 'The server is unreachable; the report was queued locally and will be sent later.');
 const UNREACHABLE = L('A szerver nem érhető el.', 'The server is unreachable.');
@@ -64,13 +66,13 @@ server.registerTool('offtrack_items', {
     if (s.error) return s.error;
     slug = s.data.project.slug;
   }
-  const r = await read(`/api/v1/projects/${encodeURIComponent(slug)}/items`);
+  const r = await read(`/api/v1/projects/${encodeURIComponent(slug)}/items?cowork=1`);
   if (r.error) return r.error;
   return ok(formatItems(r.data), r.data);
 });
 
 server.registerTool('offtrack_report', {
-  description: L('Jelentés az offtracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt fő szálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri. project: átadás másik (látható) projektnek, csak branch és manual: a teendő a célprojekt fő szálára kerül, és a thread_id ilyenkor a forrásszál. from_item_id (csak project-tel): a saját tétel, amiből a teendő lett; az átadáskor azonnal lezárul.', 'Report to offtrack. kind: stop = a closed, self-contained step (milestone); branch = a to-do listed at the end of your answer (independent to-dos separately, one coherent list of suggestions as one branch), being stuck, or a question awaiting a decision; manual = something the user must do by hand; idea = an idea about the future, without asking (private until the user publishes it). text: 1–3 sentences, in English. Without thread_id it goes to the project\'s main thread. assignee: only for manual, the email of another project member, if the user asks. project: hand off to another (visible) project, branch and manual only: the to-do goes to the target project\'s main thread, and thread_id is then the source thread. from_item_id (only with project): your own item the to-do came from; it closes at once on hand-off.'),
+  description: L('Jelentés az offtracknek. kind: stop = lezárt, önálló lépés (megálló); branch = a válaszod végén felsorolt teendő (független teendők külön, egy összefüggő javaslatlista egy ágként), elakadás vagy döntésre váró kérdés; manual = a felhasználónak kézzel elvégzendő; idea = jövőre utaló ötlet, rákérdezés nélkül (privát, amíg a felhasználó nem publikálja). text: 1–3 mondat, magyarul. thread_id nélkül a projekt fő szálára kerül. assignee: csak manual-nál, a projekt egy másik tagjának e-mail címe, ha a felhasználó kéri. project: átadás másik (látható) projektnek, csak branch és manual: a teendő a célprojekt fő szálára kerül, és a thread_id ilyenkor a forrásszál. to: átadás munkatársnak a becenevével, csak branch és manual: a teendő a munkatárs projektjének fő szálára kerül, közös feladatként; project-tel együtt nem adható meg. from_item_id (csak project-tel vagy to-val): a saját tétel, amiből a teendő lett; az átadáskor azonnal lezárul. parent_item_id: a közös feladat, amelyhez a tétel kapcsolódik (a munkatárs a feladat alatt látja); ha a session in_progress-re állított egy közös feladatot, magától is hozzá kapcsolódik; project-tel és to-val nem adható meg. repos: azoknak a repóknak a könyvtárai vagy fájljai, amelyeket a tétel érint (nem kötelező; az offtrack kliens csak lenyomatot és könyvtárnevet küld, címet soha).', 'Report to offtrack. kind: stop = a closed, self-contained step (milestone); branch = a to-do listed at the end of your answer (independent to-dos separately, one coherent list of suggestions as one branch), being stuck, or a question awaiting a decision; manual = something the user must do by hand; idea = an idea about the future, without asking (private until the user publishes it). text: 1–3 sentences, in English. Without thread_id it goes to the project\'s main thread. assignee: only for manual, the email of another project member, if the user asks. project: hand off to another (visible) project, branch and manual only: the to-do goes to the target project\'s main thread, and thread_id is then the source thread. to: hand off to a coworker by nickname, branch and manual only: the to-do goes to the main thread of the coworker\'s project as a shared task; cannot be combined with project. from_item_id (only with project or to): your own item the to-do came from; it closes at once on hand-off. parent_item_id: the shared task the item belongs to (the coworker sees it under the task); once the session sets a shared task to in_progress, reports link to it automatically; cannot be combined with project or to. repos: directories or files of the repos the item concerns (optional; the offtrack client sends only a digest and the directory name, never the address).'),
   inputSchema: {
     kind: z.enum(['stop', 'branch', 'manual', 'idea']),
     text: z.string().min(1).max(2000),
@@ -78,18 +80,89 @@ server.registerTool('offtrack_report', {
     due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     assignee: z.string().email().optional(),
     project: z.string().min(1).max(200).optional(),
+    to: z.string().min(1).max(24).optional(),
     from_item_id: z.number().int().optional(),
+    parent_item_id: z.number().int().optional(),
+    repos: z.array(z.string().min(1).max(4096)).max(10).optional(),
   },
-}, async ({ assignee, project, from_item_id, ...args }) => {
-  if (from_item_id && !project) return fail(L('A from_item_id csak project-tel együtt adható meg.', 'from_item_id requires project.'));
+}, async ({ assignee, project, to, from_item_id, repos: paths, ...args }) => {
+  if (project && to) return fail(L('A project és a to közül csak az egyiket add meg.', 'Give either project or to, not both.'));
+  if (args.parent_item_id && (project || to)) return fail(L('A parent_item_id nem adható meg project-tel vagy to-val.', 'parent_item_id cannot be combined with project or to.'));
+  if (from_item_id && !project && !to) return fail(L('A from_item_id csak project-tel vagy to-val együtt adható meg.', 'from_item_id requires project or to.'));
   const session_id = currentSession();
   if (!session_id) return noSession();
+  // repók: amit Claude megadott; különben a szerkesztett fájlok; végül a munkakönyvtár
+  const edited = takeEdited(session_id);
+  let found = await reposFor(paths?.length ? paths : edited);
+  if (!found.length) found = await reposFor([process.cwd()]);
+  if (found.length) args.repos = found;
   if (project) {
     // átadás: a thread_id a forrásszál, a tétel a cél projekt fő szálára kerül
     return write('/api/v1/items/handoff', { session_id, project, ...args, ...(from_item_id ? { from_item_id } : {}), ...(assignee ? { assignee_email: assignee } : {}) }, 'POST',
       (d) => L(`Átadva: #${d.item.id} (${project}).`, `Handed off: #${d.item.id} (${project}).`));
   }
+  if (to) {
+    // átadás munkatársnak: a célprojektet a szerver választja, és nem nevezi meg
+    return write('/api/v1/items/handoff', { session_id, to, ...args, ...(from_item_id ? { from_item_id } : {}) }, 'POST',
+      (d) => L(`Átadva: #${d.item.id} → ${d.cowork.nickname}.`, `Handed off: #${d.item.id} → ${d.cowork.nickname}.`));
+  }
   return write('/api/v1/items', { session_id, ...args, ...(assignee ? { assignee_email: assignee } : {}) }, 'POST', (d) => L(`Rögzítve: #${d.id} (${KIND[d.kind] ?? d.kind}) a #${d.thread_id} szálon.`, `Recorded: #${d.id} (${KIND[d.kind] ?? d.kind}) on thread #${d.thread_id}.`));
+});
+
+server.registerTool('offtrack_coworkers', {
+  description: L('Kiket listáz, aki ugyanazon a repón dolgozik: csak a becenevek, soronként egy. path nélkül a session könyvtára; a repó címe nem hagyja el a gépet, csak a lenyomata.', 'Lists the people working on the same repo: nicknames only, one per line. Without path, the session directory; the repo address never leaves the machine, only its digest.'),
+  inputSchema: { path: z.string().min(1).max(4096).optional() },
+}, async ({ path }) => {
+  const [repo] = await reposFor([path ?? process.cwd()]);
+  if (!repo) return fail(NO_REPO);
+  const r = await read(`/api/v1/coworkers?hash=${repo.hash}`);
+  if (r.error) return r.error;
+  return ok(formatCoworkers(r.data));
+});
+
+// Azonnali írás sor nélkül (az együttműködés műveletei a pillanatnyi listán alapulnak, később nem ismételhetők).
+async function act(path, body, method, describe) {
+  const r = await send(path, { method, body, timeoutMs: 5000 });
+  if (r.ok) return ok(describe(r.data));
+  if (r.status >= 400 && r.status < 500) return fail(`${L('Az offtrack elutasította', 'offtrack rejected it')}: ${r.data?.error ?? r.status}`);
+  return fail(UNREACHABLE);
+}
+
+server.registerTool('offtrack_cowork', {
+  description: L('Együttműködések munkatársakkal. Csak a felhasználó kérésére hívd. action: list = együttműködések (becenév, szint, saját projekt) és függő felkérések; request = projektszintű felkérés a nickname-nek a saját project-tel (közös repó nélkül is; el kell fogadnia); accept = a nickname felkérésének elfogadása (project: a saját projekted, kötelező, ha nincs javaslat); decline = elutasítás; task = vissza feladatszintre; end = megszüntetés (az átadott feladatok a címzettnél maradnak). Ha egy becenévhez több pár tartozik, a project választja ki.', 'Coworks with coworkers. Call it only when the user asks. action: list = coworks (nickname, level, own project) and pending requests; request = ask nickname for project level, with your own project (no common repo needed; they must accept); accept = accept the request from nickname (project: your own project, required when none is suggested); decline = decline it; task = back to task level; end = end the cowork (handed-off tasks stay with the recipient). When a nickname has several pairs, project picks one.'),
+  inputSchema: {
+    action: z.enum(['list', 'request', 'accept', 'decline', 'task', 'end']),
+    nickname: z.string().min(1).max(24).optional(),
+    project: z.string().min(1).max(200).optional(),
+  },
+}, async ({ action, nickname, project }) => {
+  if (action !== 'list' && !nickname) return fail(L('Add meg a becenevet (nickname).', 'Give the nickname.'));
+  if (action === 'request') {
+    if (!project) return fail(L('Add meg a saját projektedet (project).', 'Give your own project (project).'));
+    return act('/api/v1/coworks/requests', { nickname, project }, 'POST',
+      (r) => L(`Felkérés elküldve: ${r.nickname} (saját projekt: ${r.project}).`, `Request sent: ${r.nickname} (own project: ${r.project}).`));
+  }
+  const r = await read('/api/v1/coworks');
+  if (r.error) return r.error;
+  if (action === 'list') return ok(formatCoworks(r.data));
+  if (action === 'accept') {
+    const { found, error } = pickRequest(r.data.incoming, nickname, project);
+    if (error) return fail(error);
+    return act(`/api/v1/coworks/requests/${found.id}/accept`, project ? { project } : {}, 'POST',
+      (c) => L(`Elfogadva: ${c.nickname}, projektszint (saját projekt: ${c.project}).`, `Accepted: ${c.nickname}, project level (own project: ${c.project}).`));
+  }
+  if (action === 'decline') {
+    const { found, error } = pickRequest(r.data.incoming, nickname, project);
+    if (error) return fail(error);
+    return act(`/api/v1/coworks/requests/${found.id}/decline`, {}, 'POST', () => `${L('Elutasítva', 'Declined')}: ${found.nickname}.`);
+  }
+  const { found, error } = pickCowork(r.data.coworks, nickname, project);
+  if (error) return fail(error);
+  if (action === 'task') {
+    return act(`/api/v1/coworks/${found.id}`, { level: 'task' }, 'PATCH',
+      (c) => L(`Feladatszint: ${c.nickname} (saját projekt: ${c.project}).`, `Task level: ${c.nickname} (own project: ${c.project}).`));
+  }
+  return act(`/api/v1/coworks/${found.id}`, undefined, 'DELETE', () => L(`Megszüntetve: ${found.nickname} (saját projekt: ${found.project}).`, `Ended: ${found.nickname} (own project: ${found.project}).`));
 });
 
 server.registerTool('offtrack_update', {

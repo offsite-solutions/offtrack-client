@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { gitRepo, normalizeRemote, repoHash } from '../lib/git.mjs';
+import { join, basename } from 'node:path';
+import { gitRepo, repoOf, normalizeRemote, repoHash } from '../lib/git.mjs';
 
 const git = (cwd, ...a) => execFileSync('git', ['-C', cwd, ...a], { stdio: 'ignore' });
 
@@ -33,4 +33,16 @@ test('valódi repóból a remote és a repón belüli hely', () => {
   mkdirSync(join(dir, 'api', 'src'), { recursive: true });
   assert.deepEqual(gitRepo(join(dir, 'api', 'src')), { remote: 'github.com/acme/repo', rel: 'api/src' });
   assert.equal(gitRepo('/nincs/ilyen/konyvtar'), null);
+});
+
+test('repoOf: fájlra is, címke a gyökér neve', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ot-git-'));
+  git(dir, 'init', '-q');
+  assert.equal(repoOf(join(dir, 'src/a.js')), null);
+  git(dir, 'remote', 'add', 'origin', 'https://github.com/acme/repo.git');
+  mkdirSync(join(dir, 'src'));
+  writeFileSync(join(dir, 'src/a.js'), '');
+  assert.deepEqual(repoOf(join(dir, 'src/a.js')), { remote: 'github.com/acme/repo', label: basename(dir) });
+  assert.equal(repoOf(join(dir, 'src/nincs/b.js')).label, basename(dir)); // nem létező fájl: a szülő
+  assert.equal(repoOf(dir).label, basename(dir));
 });

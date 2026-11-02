@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { recorder, home } from './helpers.mjs';
@@ -219,6 +219,37 @@ test('root felveszi a gyökeret', async () => {
   assert.ok(r.stdout.includes('greengo'));
 });
 
+test('nick', async () => {
+  const srv = await recorder(() => [200, { nickname: 'Peti' }]);
+  const r = await cli(home(srv.url), ['nick', 'Peti']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(srv.requests[0].method, 'PUT');
+  assert.equal(srv.requests[0].url, '/api/v1/me/nickname');
+  assert.deepEqual(srv.requests[0].body, { nickname: 'Peti' });
+  assert.ok(r.stdout.includes('Peti'));
+});
+
+test('share-item', async () => {
+  const srv = await recorder(() => [200, { item_id: 12, cowork_id: 3 }]);
+  const r = await cli(home(srv.url), ['share-item', '12', 'Peti']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(srv.requests[0].method, 'POST');
+  assert.equal(srv.requests[0].url, '/api/v1/items/12/share');
+  assert.deepEqual(srv.requests[0].body, { nickname: 'Peti' });
+  assert.ok(r.stdout.includes('#12') && r.stdout.includes('Peti'));
+});
+
+test('nick argumentum nélkül kiírja a becenevet', async () => {
+  const srv = await recorder(() => [200, { email: 'a@b.c', nickname: 'Peti' }]);
+  const r = await cli(home(srv.url), ['nick']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(srv.requests[0].method, 'GET');
+  assert.ok(r.stdout.includes('Peti'));
+});
+
 test('mobile url kiírja a connector-URL-t', async () => {
   const srv = await recorder(() => [200, { url: 'https://ot.example/mcp/ot_abc' }]);
   const r = await cli(home(srv.url), ['mobile', 'url']);
@@ -243,8 +274,23 @@ test('list projekttel', async () => {
   const r = await cli(home(srv.url), ['list', 'offtrack']);
   await srv.close();
   assert.equal(r.status, 0);
-  assert.equal(srv.requests[0].url, '/api/v1/projects/offtrack/items');
+  assert.equal(srv.requests[0].url, '/api/v1/projects/offtrack/items?cowork=1');
   assert.equal(r.stdout, '#1 offtrack\n  #7 teszt\n');
+});
+
+test('list: munkatárs blokk', async () => {
+  const srv = await recorder(() => [200, {
+    threads: [{ id: 1, title: 'offtrack', items: [{ id: 7, kind: 'branch', text: 'teszt', status: 'open' }] }],
+    cowork: [{ nickname: 'Peti', threads: [
+      { id: 212, title: 'API-bővítés', items: [{ id: 9, kind: 'branch', text: 'végpont', status: 'in_progress' }] },
+      { id: 210, title: null, items: [{ id: 8, kind: 'manual', text: 'kulcs', status: 'open' }] },
+    ] }],
+  }]);
+  const r = await cli(home(srv.url), ['list', 'offtrack']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(srv.requests[0].url, '/api/v1/projects/offtrack/items?cowork=1');
+  assert.equal(r.stdout, '#1 offtrack\n  #7 teszt\n\n#212 API-bővítés · Peti\n  #9 végpont [folyamatban]\n#210 fő szál · Peti\n  #8 kulcs [kézi]\n');
 });
 
 test('list a session projektjével, ismeretlen sessionnél hiba', async () => {
@@ -252,7 +298,7 @@ test('list a session projektjével, ismeretlen sessionnél hiba', async () => {
     ? [200, { session_id: 's1', project: { slug: 'greengo', name: 'greengo' } }] : [200, []]));
   const r = await cli(home(srv.url), ['list']);
   await srv.close();
-  assert.equal(srv.requests[1].url, '/api/v1/projects/greengo/items');
+  assert.equal(srv.requests[1].url, '/api/v1/projects/greengo/items?cowork=1');
   assert.equal(r.stdout, 'Nincs nyitott tétel.\n');
 
   const srv2 = await recorder(() => [404, { error: 'nincs ilyen session' }]);
@@ -295,4 +341,135 @@ test('offtrack move', async () => {
   assert.equal(r.status, 0);
   assert.equal(bad.status, 2);
   assert.equal(srv.requests.length, 1);
+});
+
+function repoDir(dir) {
+  const repo = mkdtempSync(join(tmpdir(), 'ot-repo-'));
+  for (const a of [['init', '-q'], ['remote', 'add', 'origin', 'git@github.com:acme/secret-repo.git']]) execFileSync('git', ['-C', repo, ...a]);
+  writeFileSync(join(dir, 'repo-salt'), 'SO');
+  return repo;
+}
+
+test('coworkers: a lenyomattal kérdez', async () => {
+  const srv = await recorder(() => [200, [{ nickname: 'Anna', level: 'project' }, { nickname: 'Peti', level: null }]]);
+  const dir = home(srv.url);
+  const repo = repoDir(dir);
+  const r = await cli(dir, ['coworkers', repo]);
+  await srv.close();
+  assert.equal(r.status, 0);
+  assert.match(srv.requests[0].url, /^\/api\/v1\/coworkers\?hash=[0-9a-f]{64}$/);
+  assert.equal(srv.requests[0].url.includes('github.com'), false);
+  assert.equal(r.stdout, 'Anna (project)\nPeti\n');
+});
+
+test('coworkers: üres lista, és nem repó könyvtár', async () => {
+  const srv = await recorder(() => [200, []]);
+  const dir = home(srv.url);
+  const repo = repoDir(dir);
+  const r = await cli(dir, ['coworkers', repo]);
+  const bad = await cli(dir, ['coworkers', tmpdir()]);
+  await srv.close();
+  assert.ok(r.stdout.includes('Ezen a repón más, becenévvel rendelkező felhasználó nem dolgozik.'));
+  assert.equal(bad.status, 1);
+  assert.equal(srv.requests.length, 1);
+});
+
+// A GET /coworks válasza; a többi kérésre a megadott válasz.
+const COWORKS = {
+  coworks: [{ id: 7, nickname: 'Trinity', level: 'project', project: 'matrix' }, { id: 8, nickname: 'Trinity', level: 'task', project: 'zion' },
+    { id: 9, nickname: 'Morpheus', level: 'task', project: 'zion' }],
+  incoming: [{ id: 21, nickname: 'Neo', level: 'project', project: null }],
+  outgoing: [{ id: 22, nickname: 'Morpheus', level: 'project', project: 'matrix' }],
+};
+const coworkServer = (reply = [200, {}]) => recorder((req) => (req.method === 'GET' ? [200, COWORKS] : reply));
+
+test('cowork list', async () => {
+  const srv = await coworkServer();
+  const r = await cli(home(srv.url), ['cowork', 'list']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(srv.requests[0].url, '/api/v1/coworks');
+  for (const s of ['Trinity', 'matrix', 'zion', 'Morpheus', 'Neo', 'offtrack cowork accept Neo']) assert.ok(r.stdout.includes(s), s);
+});
+
+test('cowork <becenév> project: felkérés a saját projekttel', async () => {
+  const srv = await recorder(() => [200, { id: 30, nickname: 'Neo', level: 'project', project: 'matrix' }]);
+  const r = await cli(home(srv.url), ['cowork', 'Neo', 'project', '--project', 'matrix']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(srv.requests[0].method, 'POST');
+  assert.equal(srv.requests[0].url, '/api/v1/coworks/requests');
+  assert.deepEqual(srv.requests[0].body, { nickname: 'Neo', project: 'matrix' });
+  // --project nélkül: hiba, kérés nélkül
+  const srv2 = await recorder();
+  const r2 = await cli(home(srv2.url), ['cowork', 'Neo', 'project']);
+  await srv2.close();
+  assert.equal(r2.status, 1);
+  assert.equal(srv2.requests.length, 0);
+});
+
+test('cowork <becenév> task és end: a becenév és a saját projekt szerinti együttműködés', async () => {
+  const srv = await coworkServer([200, { id: 9, nickname: 'Morpheus', level: 'task', project: 'zion' }]);
+  const r = await cli(home(srv.url), ['cowork', 'morpheus', 'task']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(srv.requests[1].method, 'PATCH');
+  assert.equal(srv.requests[1].url, '/api/v1/coworks/9');
+  assert.deepEqual(srv.requests[1].body, { level: 'task' });
+  const e = await cli(home(srv.url), ['cowork', 'Trinity', 'end', '--project', 'Zion']);
+  await srv.close();
+  assert.equal(e.status, 0, e.stderr);
+  assert.equal(srv.requests[3].method, 'DELETE');
+  assert.equal(srv.requests[3].url, '/api/v1/coworks/8');
+});
+
+test('több pár --project nélkül: hiba', async () => {
+  const srv = await coworkServer();
+  const r = await cli(home(srv.url), ['cowork', 'Trinity', 'end']);
+  await srv.close();
+  assert.equal(r.status, 1);
+  assert.equal(srv.requests.length, 1);
+  assert.ok(r.stderr.includes('matrix') && r.stderr.includes('zion') && r.stderr.includes('--project'), r.stderr);
+  // ismeretlen becenév: hiba
+  const srv2 = await coworkServer();
+  const r2 = await cli(home(srv2.url), ['cowork', 'Senki', 'task']);
+  await srv2.close();
+  assert.equal(r2.status, 1);
+  assert.equal(srv2.requests.length, 1);
+});
+
+test('cowork accept és decline', async () => {
+  const srv = await coworkServer([200, { id: 40, nickname: 'Neo', level: 'project', project: 'matrix' }]);
+  const a = await cli(home(srv.url), ['cowork', 'accept', 'Neo', '--project', 'matrix']);
+  assert.equal(a.status, 0, a.stderr);
+  assert.equal(srv.requests[1].url, '/api/v1/coworks/requests/21/accept');
+  assert.deepEqual(srv.requests[1].body, { project: 'matrix' });
+  const a2 = await cli(home(srv.url), ['cowork', 'accept', 'Neo']);
+  assert.equal(a2.status, 0, a2.stderr);
+  assert.deepEqual(srv.requests[3].body, {});
+  const d = await cli(home(srv.url), ['cowork', 'decline', 'neo']);
+  await srv.close();
+  assert.equal(d.status, 0, d.stderr);
+  assert.equal(srv.requests[5].method, 'POST');
+  assert.equal(srv.requests[5].url, '/api/v1/coworks/requests/21/decline');
+});
+
+test('list: a származás, munkatárstól kapottnál becenévvel', async () => {
+  const srv = await recorder(() => [200, { threads: [{ id: 1, title: 'offtrack', items: [
+    { id: 7, kind: 'branch', text: 'kapott', status: 'open', origin: { nickname: 'Neo', item_id: 4 } },
+    { id: 8, kind: 'branch', text: 'átadott', status: 'open', origin: { project: 'zion', item_id: null } },
+  ] }], cowork: [] }]);
+  const r = await cli(home(srv.url), ['list', 'offtrack']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout, '#1 offtrack\n  #7 kapott [← Neo: #4]\n  #8 átadott [← zion]\n');
+});
+
+test('cowork decline: a becenév nélküli felkérés nem akasztja meg', async () => {
+  const srv = await recorder((req) => (req.method === 'GET'
+    ? [200, { coworks: [], incoming: [{ id: 30, nickname: null, level: 'project', project: null }, { id: 21, nickname: 'Neo', level: 'project', project: null }], outgoing: [] }]
+    : [200, {}]));
+  const d = await cli(home(srv.url), ['cowork', 'decline', 'Neo']);
+  await srv.close();
+  assert.equal(d.status, 0, d.stderr);
+  assert.equal(srv.requests[1].url, '/api/v1/coworks/requests/21/decline');
 });

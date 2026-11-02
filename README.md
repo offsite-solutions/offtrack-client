@@ -4,6 +4,7 @@ The Mac client of [offtrack](https://offtrack.offsite-solutions.com), the Offsit
 
 **Full install guide (English and Hungarian):** https://offtrack.offsite-solutions.com/install
 **User guide:** https://offtrack.offsite-solutions.com/guide
+**Working with coworkers:** https://offtrack.offsite-solutions.com/cowork
 
 ```sh
 npm install -g github:offsite-solutions/offtrack-client
@@ -22,7 +23,9 @@ License: MIT.
 
 Sessions send summaries of one to three sentences, never the conversation text. The client also sends the session ID, working directory path, client type, process ID, version and language.
 
-If the working directory is a git repo with an `origin` remote, every session start also sends a salted SHA-256 fingerprint of the remote address and the relative location inside the repo. That is how offtrack recognises the same repo on another machine. The address, username and token never leave your machine. This is automatic and has no separate off switch. A fingerprint only matches among your own directories, so it never takes anyone into someone else's project.
+If the working directory is a git repo with an `origin` remote, every session start also sends a salted SHA-256 fingerprint of the remote address and the relative location inside the repo. That is how offtrack recognises the same repo on another machine. The address, username and token never leave your machine. This is automatic and has no separate off switch. A fingerprint only matches among your own directories, so it never takes anyone into someone else's project. If you set a nickname, people working on the same repo can find you by the fingerprint; they see only your nickname.
+
+Reports also carry the fingerprint of every repo they concern and the name of the repo's root directory. Items show that name as a repo label.
 
 This repository is a published copy of the `client/` folder of the offtrack project; changes are made there.
 
@@ -34,6 +37,7 @@ Az [offtrack](https://offtrack.offsite-solutions.com) Mac-kliense. Az offtrack a
 
 **Részletes telepítési útmutató (magyarul és angolul):** https://offtrack.offsite-solutions.com/install
 **Használati útmutató:** https://offtrack.offsite-solutions.com/guide
+**Munka munkatársakkal:** https://offtrack.offsite-solutions.com/cowork
 
 A telepítés a fenti parancsokkal megy, magyarul `offtrack install --lang hu`-val (a CLAUDE.md-blokk, a parancs, a skill és a szerver üzenetei is magyarok lesznek); a kliens-tokent a telepítési oldalon, belépve generálhatod. Frissítés: ugyanaz az `npm install -g` parancs (az `offtrack version` megmutatja, van-e újabb [release](https://github.com/offsite-solutions/offtrack-client/releases); a sessionök indításkor is szólnak); eltávolítás: `offtrack uninstall`, majd `npm uninstall -g offtrack-client`.
 
@@ -43,4 +47,6 @@ Licenc: MIT.
 
 A sessionök egy-három mondatos összefoglalókat küldenek, a beszélgetés szövegét soha. A kliens elküldi a session azonosítóját, a munkakönyvtár útvonalát, a kliens típusát, a folyamat azonosítóját, a verziót és a nyelvet is.
 
-Ha a munkakönyvtár git-repó `origin` remote-tal, minden session indulásakor elmegy a remote címéből számolt sózott SHA-256 lenyomat és a repón belüli relatív hely is. Ebből ismeri fel az offtrack ugyanazt a repót egy másik gépen. A cím, a felhasználónév és a token nem hagyja el a gépet. Ez automatikus, és külön nem kapcsolható ki. A lenyomat csak a saját könyvtáraid között illeszt, így senkit nem visz be más projektjébe.
+Ha a munkakönyvtár git-repó `origin` remote-tal, minden session indulásakor elmegy a remote címéből számolt sózott SHA-256 lenyomat és a repón belüli relatív hely is. Ebből ismeri fel az offtrack ugyanazt a repót egy másik gépen. A cím, a felhasználónév és a token nem hagyja el a gépet. Ez automatikus, és külön nem kapcsolható ki. A lenyomat csak a saját könyvtáraid között illeszt, így senkit nem visz be más projektjébe. Ha beállítasz becenevet, a lenyomat alapján találnak meg azok, akik ugyanazon a repón dolgoznak; rólad csak a becenevedet látják.
+
+A jelentésekkel minden érintett repó lenyomata és a repó gyökérkönyvtárának neve is elmegy. A tételen ez a név látszik repócímkeként.
