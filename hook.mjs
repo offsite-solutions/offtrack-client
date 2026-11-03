@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, unlinkSync, appendFileSync } from 'node:fs
 import { send, enqueue, flushQueue } from './lib/api.mjs';
 import { pidFile, contextFile, editedFile, L, UPDATE_COMMAND } from './lib/config.mjs';
 import { claudePid } from './lib/proc.mjs';
+import { IS_WIN, slash } from './lib/platform.mjs';
 import { endsWithList } from './lib/transcript.mjs';
 import { gitReport } from './lib/git.mjs';
 
@@ -21,10 +22,12 @@ async function main() {
   const input = JSON.parse(readFileSync(0, 'utf8'));
   const event = input.hook_event_name;
   if (!EVENTS.has(event) || !input.session_id || !input.cwd) return;
-  const pid = claudePid();
+  // Windowson a folyamatlánc lekérdezése lassú (PowerShell), ezért ott csak a session elején és végén kell;
+  // a többi eseménynél a szerver megtartja a korábbi értéket.
+  const pid = IS_WIN && event !== 'SessionStart' && event !== 'SessionEnd' ? null : claudePid();
 
   const body = {
-    event, session_id: input.session_id, cwd: input.cwd, claude_pid: pid,
+    event, session_id: input.session_id, cwd: slash(input.cwd), claude_pid: pid,
     client: process.env.CLAUDE_CODE_ENTRYPOINT ?? null,
   };
   if (input.source) body.source = input.source;

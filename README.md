@@ -1,6 +1,6 @@
 # offtrack client
 
-The Mac client of [offtrack](https://offtrack.offsite-solutions.com), the Offsite Solutions tracker for work done with Claude Code. Every Claude Code session reports its milestones, open branches, manual tasks and ideas on its own, and the map shows what is still open. The “Your stats” page shows your own work in numbers.
+The macOS and Windows client of [offtrack](https://offtrack.offsite-solutions.com), the Offsite Solutions tracker for work done with Claude Code. Every Claude Code session reports its milestones, open branches, manual tasks and ideas on its own, and the map shows what is still open. The “Your stats” page shows your own work in numbers.
 
 **Full install guide (English and Hungarian):** https://offtrack.offsite-solutions.com/install
 **User guide:** https://offtrack.offsite-solutions.com/guide
@@ -15,7 +15,7 @@ offtrack whoami
 
 The skill alone installs with `npx skills add offsite-solutions/offtrack-client`, but it needs the client above; `offtrack install` replaces a linked copy with the client's own.
 
-Requirements: macOS, Claude Code, Node.js 22 or newer, git. Update by running the `npm install -g` command again (`offtrack version` shows whether a newer [release](https://github.com/offsite-solutions/offtrack-client/releases) exists; sessions also mention it at startup); remove with `offtrack uninstall`, then `npm uninstall -g offtrack-client`.
+Requirements: macOS or Windows, Claude Code, Node.js 22 or newer, git. Update by running the `npm install -g` command again (`offtrack version` shows whether a newer [release](https://github.com/offsite-solutions/offtrack-client/releases) exists; sessions also mention it at startup); remove with `offtrack uninstall`, then `npm uninstall -g offtrack-client`.
 
 License: MIT.
 
@@ -33,7 +33,7 @@ This repository is a published copy of the `client/` folder of the offtrack proj
 
 # offtrack kliens
 
-Az [offtrack](https://offtrack.offsite-solutions.com) Mac-kliense. Az offtrack az Offsite Solutions feladatkövetője a Claude Code-dal végzett munkához: minden session magától jelenti a lezárt lépéseket, a nyitott ágakat, a kézi teendőket és az ötleteket, és a térképen látszik, mi van még nyitva. A Statisztikám oldal a saját munkádat mutatja számokban.
+Az [offtrack](https://offtrack.offsite-solutions.com) kliense macOS-re és Windowsra. Az offtrack az Offsite Solutions feladatkövetője a Claude Code-dal végzett munkához: minden session magától jelenti a lezárt lépéseket, a nyitott ágakat, a kézi teendőket és az ötleteket, és a térképen látszik, mi van még nyitva. A Statisztikám oldal a saját munkádat mutatja számokban.
 
 **Részletes telepítési útmutató (magyarul és angolul):** https://offtrack.offsite-solutions.com/install
 **Használati útmutató:** https://offtrack.offsite-solutions.com/guide

@@ -9,7 +9,7 @@ offtrack is the Offsite Solutions tracker: every Claude Code session reports to 
 
 ## Setup
 
-This skill works with the offtrack client, which provides the `offtrack` command, the hooks and the `offtrack_*` tools. If they are missing, ask the user to run these in a terminal (needs macOS, Claude Code, Node.js 22+ and git):
+This skill works with the offtrack client, which provides the `offtrack` command, the hooks and the `offtrack_*` tools. If they are missing, ask the user to run these in a terminal (needs macOS or Windows, Claude Code, Node.js 22+ and git):
 
 ```sh
 npm install -g github:offsite-solutions/offtrack-client

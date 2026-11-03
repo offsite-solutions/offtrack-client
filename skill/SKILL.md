@@ -11,7 +11,7 @@ Az offtrack az Offsite Solutions feladatkövetője: minden Claude Code session j
 
 ## Előfeltétel
 
-A skill az offtrack klienssel működik: ez adja az `offtrack` parancsot, a hookokat és az `offtrack_*` toolokat. Ha hiányoznak, kérd meg a felhasználót, hogy a terminálban futtassa ezeket (macOS, Claude Code, Node.js 22+ és git kell hozzá):
+A skill az offtrack klienssel működik: ez adja az `offtrack` parancsot, a hookokat és az `offtrack_*` toolokat. Ha hiányoznak, kérd meg a felhasználót, hogy a terminálban futtassa ezeket (macOS vagy Windows, Claude Code, Node.js 22+ és git kell hozzá):
 
 ```sh
 npm install -g github:offsite-solutions/offtrack-client

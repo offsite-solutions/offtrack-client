@@ -2,11 +2,12 @@
 // offtrack parancssor.
 import { writeFileSync, chmodSync, readFileSync, renameSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, resolve, isAbsolute } from 'node:path';
 import { send, flushQueue, queueLength } from '../lib/api.mjs';
 import { home, L, lang, VERSION, UPDATE_COMMAND } from '../lib/config.mjs';
 import { currentSession } from '../lib/session.mjs';
 import { claudePid } from '../lib/proc.mjs';
+import { slash } from '../lib/platform.mjs';
 import { formatItems } from '../lib/items.mjs';
 import { reposFor } from '../lib/git.mjs';
 import { formatCoworkers, formatCoworks, NO_REPO, pickCowork, pickRequest, same } from '../lib/cowork.mjs';
@@ -383,7 +384,7 @@ async function main([cmd, ...args]) {
       (p) => console.log(`${L('Csatolva', 'Attached')}: ${process.cwd()} → ${p.name}.`));
   }
   if (cmd === 'root' && args.length === 2) {
-    const path = args[1].startsWith('/') ? args[1] : join(process.cwd(), args[1]);
+    const path = slash(isAbsolute(args[1]) ? args[1] : join(process.cwd(), args[1]));
     return call(req('/api/v1/projects/roots', { body: { project: args[0], path } }), (p) => console.log(`${L('Gyökér', 'Root')}: ${path} → ${p.display_name || p.name}`));
   }
   if (cmd === 'rename' && args.length >= 1) {

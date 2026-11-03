@@ -5,20 +5,32 @@
 // Használat: offtrack install|uninstall (vagy node install.mjs install|uninstall) [--lang en|hu] [--settings <fájl>] [--claude-md <fájl>]  (alapból angol)
 // A --settings / --claude-md kapcsolóval csak a megadott fájlokat javítja (próba másolaton).
 import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync, symlinkSync, unlinkSync, lstatSync, readlinkSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { IS_WIN, slash, claudeSync } from './lib/platform.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Globális npm-telepítés (npm install -g github:…): a parancsot az npm teszi a PATH-ra.
-const FROM_NPM = /\/node_modules\//.test(HERE);
+const FROM_NPM = /\/node_modules\//.test(slash(HERE));
 const EVENTS = ['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Stop', 'SessionEnd'];
 // A saját hookjaink felismerése: a monorepóból (…/offtrack/client/hook.mjs), a publikus klónból
 // vagy a globális npm-csomagból (…/offtrack-client/hook.mjs) telepített hook; más eszköz hook.mjs-ét nem érinti.
 const OURS = /\/offtrack(\/client|-client)\/hook\.mjs\b/;
 const START = '<!-- offtrack:start -->';
 const END = '<!-- offtrack:end -->';
+
+// A hook parancsa. Windowson perjeles és idézőjeles útvonal, mert a Claude Code Git Bash-sel futtatja,
+// amely a backslasht elnyeli; így az OURS is felismeri.
+export function hookCommand(dir, win = IS_WIN) {
+  return win ? `node "${slash(dir, true)}/hook.mjs"` : `node ${join(dir, 'hook.mjs')}`;
+}
+
+// Ugyanoda mutat-e a link; a Windows-junction célja \\?\ előtaggal vagy záró backslash-sel is jöhet.
+const sameTarget = (link, targets) => {
+  const t = resolve(readlinkSync(link).replace(/^\\\\\?\\/, ''));
+  return targets.some((x) => resolve(x) === t);
+};
 
 const isOurs = (h) => typeof h?.command === 'string' && OURS.test(h.command);
 
@@ -86,14 +98,14 @@ function rewrite(file, fn) {
 }
 
 function mcpRegistered() {
-  try { return execFileSync('claude', ['mcp', 'get', 'offtrack'], { stdio: ['ignore', 'pipe', 'ignore'] }).length > 0; } catch { return false; }
+  try { return claudeSync(['mcp', 'get', 'offtrack'], { stdio: ['ignore', 'pipe', 'ignore'] }).length > 0; } catch { return false; }
 }
 
 function run(cmd, opts) {
   const settingsFile = opts.settings ?? join(homedir(), '.claude', 'settings.json');
   const claudeMd = opts.claudeMd ?? join(homedir(), '.claude', 'CLAUDE.md');
   const filesOnly = Boolean(opts.settings || opts.claudeMd);
-  const hookCmd = `node ${join(HERE, 'hook.mjs')}`;
+  const hookCmd = hookCommand(HERE);
   const conf = join(homedir(), '.config', 'offtrack');
   const confFile = join(conf, 'config.json');
   let saved = {};
@@ -107,10 +119,13 @@ function run(cmd, opts) {
     rewrite(settingsFile, (t) => JSON.stringify(patchSettings(JSON.parse(t ?? '{}'), hookCmd), null, 2) + '\n');
     rewrite(claudeMd, (t) => patchClaudeMd(t ?? '', block));
     if (filesOnly) return;
-    if (!mcpRegistered()) execFileSync('claude', ['mcp', 'add', '--scope', 'user', 'offtrack', '--', 'node', join(HERE, 'mcp.mjs')], { stdio: 'inherit' });
+    if (!mcpRegistered()) claudeSync(['mcp', 'add', '--scope', 'user', 'offtrack', '--', 'node', join(HERE, 'mcp.mjs')], { stdio: 'inherit' });
     mkdirSync(conf, { recursive: true, mode: 0o700 });
     writeFileSync(confFile, JSON.stringify({ url: 'https://offtrack.offsite-solutions.com', ...saved, lang }) + '\n', { mode: 0o600 });
-    if (!FROM_NPM) {
+    // Windowson a fájl-symlinkhez admin jog kell, és a ~/.local/bin nincs a PATH-on: ott az npm-es telepítés adja a parancsot.
+    if (!FROM_NPM && IS_WIN) console.log(M('parancs: Windowson az `npm install -g github:offsite-solutions/offtrack-client` hozza létre',
+      'command: on Windows, `npm install -g github:offsite-solutions/offtrack-client` creates it'));
+    else if (!FROM_NPM) {
       const bin = join(homedir(), '.local', 'bin');
       mkdirSync(bin, { recursive: true });
       const link = join(bin, 'offtrack');
@@ -127,16 +142,17 @@ function run(cmd, opts) {
       if (lstatSync(skill).isSymbolicLink()) unlinkSync(skill);
       else console.log(M(`kihagyva: ${skill} létezik, és nem link`, `skipped: ${skill} exists and is not a link`));
     } catch { /* nincs még */ }
-    if (!existsSync(skill)) { symlinkSync(skillDir, skill); console.log(`skill: ${skill}`); }
+    // a 'junction' Windowson admin jog nélkül is működik, máshol a Node figyelmen kívül hagyja
+    if (!existsSync(skill)) { symlinkSync(skillDir, skill, 'junction'); console.log(`skill: ${skill}`); }
   } else {
     rewrite(settingsFile, (t) => (t === null ? null : JSON.stringify(unpatchSettings(JSON.parse(t)), null, 2) + '\n'));
     rewrite(claudeMd, (t) => (t === null ? null : unpatchClaudeMd(t)));
     if (filesOnly) return;
-    if (mcpRegistered()) execFileSync('claude', ['mcp', 'remove', '--scope', 'user', 'offtrack'], { stdio: 'inherit' });
+    if (mcpRegistered()) claudeSync(['mcp', 'remove', '--scope', 'user', 'offtrack'], { stdio: 'inherit' });
     const link = join(homedir(), '.local', 'bin', 'offtrack');
-    try { if (readlinkSync(link) === join(HERE, 'bin', 'offtrack.mjs')) unlinkSync(link); } catch { /* nincs */ }
+    try { if (sameTarget(link, [join(HERE, 'bin', 'offtrack.mjs')])) unlinkSync(link); } catch { /* nincs */ }
     const skill = join(homedir(), '.claude', 'skills', 'offtrack');
-    try { if (lstatSync(skill).isSymbolicLink() && [join(HERE, 'skill'), join(HERE, 'skills', 'offtrack'), join(HERE, 'skill-en')].includes(readlinkSync(skill))) unlinkSync(skill); } catch { /* nincs */ }
+    try { if (lstatSync(skill).isSymbolicLink() && sameTarget(skill, [join(HERE, 'skill'), join(HERE, 'skills', 'offtrack'), join(HERE, 'skill-en')])) unlinkSync(skill); } catch { /* nincs */ }
   }
 }
 
