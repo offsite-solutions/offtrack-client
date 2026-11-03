@@ -473,3 +473,13 @@ test('cowork decline: a becenév nélküli felkérés nem akasztja meg', async (
   assert.equal(d.status, 0, d.stderr);
   assert.equal(srv.requests[1].url, '/api/v1/coworks/requests/21/decline');
 });
+
+test('cowork list: a becenév nélküli régi felkérés nem „null”', async () => {
+  const srv = await recorder(() => [200, { coworks: [], incoming: [{ id: 30, nickname: null, level: 'project', project: null }], outgoing: [] }]);
+  const r = await cli(home(srv.url), ['cowork', 'list']);
+  await srv.close();
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(!r.stdout.includes('null'), r.stdout);
+  assert.match(r.stdout, /\((no nickname|nincs becenév)\)/);
+  assert.ok(!r.stdout.includes('cowork accept'), r.stdout);
+});
