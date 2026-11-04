@@ -172,6 +172,15 @@ test('report to-val: a handoff végpontra megy', async () => {
   assert.ok(text(res[1]).startsWith('Átadva: #32 → Peti.'));
 });
 
+test('report to-val from_item_id nélkül: figyelmeztet a hivatkozott nyitott tételre', async () => {
+  const srv = await recorder(() => [201, { item: { id: 33, kind: 'branch', text: 'A #12 megvalósítása', status: 'open' }, cowork: { id: 1, level: 'task', nickname: 'Peti' }, unlinked: [12] }]);
+  const dir = home(srv.url);
+  withPid(dir, 's-new');
+  const res = await mcp(dir, [call(1, 'offtrack_report', { kind: 'branch', text: 'A #12 megvalósítása', to: 'Peti' })]);
+  await srv.close();
+  assert.ok(text(res[1]).startsWith('Átadva: #33 → Peti. Figyelem: a szöveg a saját nyitott #12 tételre hivatkozik'));
+});
+
 test('report parent_item_id-vel', async () => {
   const srv = await recorder(() => [201, { id: 40, kind: 'stop', thread_id: 8, parent_item_id: 32 }]);
   const dir = home(srv.url);
