@@ -47,12 +47,15 @@ test('unpatchClaudeMd', () => {
 
 test('a skill frontmattere', async () => {
   const { readFileSync } = await import('node:fs');
-  const t = readFileSync(new URL('../skill/SKILL.md', import.meta.url), 'utf8');
+  const t = readFileSync(new URL('../skill.hu.md', import.meta.url), 'utf8');
   assert.equal(t.split('\n')[0], '---');
   assert.match(t, /^name: offtrack$/m);
   assert.match(t, /^description: \S/m);
-  // a skills CLI a gyökér almappáit is nézi: e nélkül a magyar megelőzné az angolt
-  assert.match(t, /^metadata:\n  internal: true$/m);
+  // a skills.sh minden SKILL.md-t felvesz: a tárolóban csak az angol lehet ilyen nevű
+  const { readdirSync } = await import('node:fs');
+  const root = new URL('..', import.meta.url).pathname;
+  const found = readdirSync(root, { recursive: true }).filter((f) => /(^|[\\/])SKILL\.md$/.test(f) && !/node_modules/.test(f));
+  assert.deepEqual(found.map((f) => f.replace(/\\/g, '/')), ['skills/offtrack/SKILL.md']);
 });
 
 test('a CLAUDE.md-blokk utal a skillre és nem említi Lászlót', async () => {
@@ -115,7 +118,7 @@ test('install --lang en az angol blokkot írja be', () => {
 });
 
 test('az angol skill ugyanazokat a műveleteket írja le', () => {
-  const hu = rf(new URL('../skill/SKILL.md', import.meta.url), 'utf8');
+  const hu = rf(new URL('../skill.hu.md', import.meta.url), 'utf8');
   const en = rf(new URL('../skills/offtrack/SKILL.md', import.meta.url), 'utf8');
   assert.match(en, /^---\nname: offtrack\n/);
   // a kódként jelölt parancsok és toolok (`offtrack merge …`, `offtrack_update …`) első két szava

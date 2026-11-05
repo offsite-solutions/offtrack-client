@@ -3,11 +3,12 @@
 // Mindig 0-val lép ki, és soha nem blokkol, ha a szerver nem érhető el.
 import { readFileSync, writeFileSync, unlinkSync, appendFileSync } from 'node:fs';
 import { send, enqueue, flushQueue } from './lib/api.mjs';
-import { pidFile, contextFile, editedFile, L, UPDATE_COMMAND } from './lib/config.mjs';
+import { pidFile, contextFile, editedFile, L, lang, UPDATE_COMMAND } from './lib/config.mjs';
 import { claudePid } from './lib/proc.mjs';
 import { IS_WIN, slash } from './lib/platform.mjs';
 import { endsWithList } from './lib/transcript.mjs';
 import { gitReport } from './lib/git.mjs';
+import { refreshSkill } from './lib/skill.mjs';
 
 const OFFLINE = () => L('[offtrack] A szerver nem érhető el, ez az utolsó ismert állapot; a jelentések helyben sorba kerülnek.', '[offtrack] The server is unreachable; this is the last known state. Reports are queued locally.');
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
@@ -56,6 +57,7 @@ async function main() {
   if (!res.ok && event !== 'Stop') enqueue('/api/v1/events', body);
 
   if (event === 'SessionStart') {
+    refreshSkill(lang());
     let context;
     if (res.ok && typeof res.data?.context === 'string') {
       context = res.data.context;

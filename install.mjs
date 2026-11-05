@@ -9,6 +9,7 @@ import { homedir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { IS_WIN, slash, claudeSync } from './lib/platform.mjs';
+import { installSkill, skillPath, uninstallSkill } from './lib/skill.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Globális npm-telepítés (npm install -g github:…): a parancsot az npm teszi a PATH-ra.
@@ -112,7 +113,6 @@ function run(cmd, opts) {
   try { saved = JSON.parse(readFileSync(confFile, 'utf8')); } catch { /* még nincs */ }
   const lang = chooseLang(opts.lang, saved.lang);
   LANG = lang;
-  const skillDir = join(HERE, ...(lang === 'en' ? ['skills', 'offtrack'] : ['skill']));
   const block = readFileSync(join(HERE, lang === 'en' ? 'claude-md.en.md' : 'claude-md.md'), 'utf8');
 
   if (cmd === 'install') {
@@ -133,17 +133,9 @@ function run(cmd, opts) {
       symlinkSync(join(HERE, 'bin', 'offtrack.mjs'), link);
       console.log(`${M('parancs', 'command')}: ${link}`);
     }
-    // A skill a tároló könyvtárára mutató link, így a tároló frissítése azonnal érvényes.
-    // Az angol a skills/ alatt van, mert a skills.sh CLI-je ott keresi; a magyart a metadata.internal rejti el előle.
-    const skills = join(homedir(), '.claude', 'skills');
-    mkdirSync(skills, { recursive: true });
-    const skill = join(skills, 'offtrack');
-    try {
-      if (lstatSync(skill).isSymbolicLink()) unlinkSync(skill);
-      else console.log(M(`kihagyva: ${skill} létezik, és nem link`, `skipped: ${skill} exists and is not a link`));
-    } catch { /* nincs még */ }
-    // a 'junction' Windowson admin jog nélkül is működik, máshol a Node figyelmen kívül hagyja
-    if (!existsSync(skill)) { symlinkSync(skillDir, skill, 'junction'); console.log(`skill: ${skill}`); }
+    // a skill: angolul link a tárolóra, magyarul saját másolat (lib/skill.mjs)
+    if (installSkill(lang) === 'skipped') console.log(M(`kihagyva: ${skillPath()} létezik, és nem az offtracké`, `skipped: ${skillPath()} exists and is not offtrack's`));
+    else console.log(`skill: ${skillPath()}`);
   } else {
     rewrite(settingsFile, (t) => (t === null ? null : JSON.stringify(unpatchSettings(JSON.parse(t)), null, 2) + '\n'));
     rewrite(claudeMd, (t) => (t === null ? null : unpatchClaudeMd(t)));
@@ -151,8 +143,7 @@ function run(cmd, opts) {
     if (mcpRegistered()) claudeSync(['mcp', 'remove', '--scope', 'user', 'offtrack'], { stdio: 'inherit' });
     const link = join(homedir(), '.local', 'bin', 'offtrack');
     try { if (sameTarget(link, [join(HERE, 'bin', 'offtrack.mjs')])) unlinkSync(link); } catch { /* nincs */ }
-    const skill = join(homedir(), '.claude', 'skills', 'offtrack');
-    try { if (lstatSync(skill).isSymbolicLink() && sameTarget(skill, [join(HERE, 'skill'), join(HERE, 'skills', 'offtrack'), join(HERE, 'skill-en')])) unlinkSync(skill); } catch { /* nincs */ }
+    uninstallSkill();
   }
 }
 
